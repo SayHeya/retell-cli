@@ -1,5 +1,9 @@
 
-The purpose of this document is to give context for how this project was conceived, researched and designed. All this detail colminated into the initial commit 
+# Purpose of this Document
+
+The purpose of this document is to give context for how this project was initially conceived, researched and designed. All this detail colminated into the generation of code which is in the initial commit, untested, unedited.
+
+Initial commit hash: 883fcc48c787c44e68e2b04548042084bda01753
 
 ---
 
@@ -7,7 +11,7 @@ The purpose of this document is to give context for how this project was conceiv
 
 ## Initial Prompt from User
 
-I'm using Retell AI to build AI agents however the iteration speed during development is slow, and I need to be able to edit the MCP connection details for an agent, duplicate agents and edit their respective prompts and other things. Please read the Retell AI documentation. The plan is to create a CLI to edit agents and setup a proxy that I can send requests to locally that will connect to the services.
+"I'm using Retell AI to build AI agents however the iteration speed during development is slow, and I need to be able to edit the MCP connection details for an agent, duplicate agents and edit their respective prompts and other things. Please read the Retell AI documentation. The plan is to create a CLI to edit agents and setup a proxy that I can send requests to locally that will connect to the services."
 
 ---
 
@@ -274,9 +278,9 @@ Everything is ready to use immediately - just run the setup script, configure yo
 
 # Reflection
 
-## User Prompt
+## User Prompt on Reflection
 
-Okay let's take a moment to reflect. I don't want to produce or change any work we've done, I just to make sure we are on the same page. This is an application that service as a development tool. What are the benefits and capabilities of tools with respect to development time?
+"Okay let's take a moment to reflect. I don't want to produce or change any work we've done, I just to make sure we are on the same page. This is an application that service as a development tool. What are the benefits and capabilities of tools with respect to development time?"
 
 ---
 
@@ -390,9 +394,9 @@ The result is development cycles that are **10-30x faster** for common tasks, wi
 
 Does this align with your vision for solving the slow iteration speed problem?
 
-## User Prompt
+## User Prompt on Particular Things to be Solved
 
-Personally I'm developing an app where I need to setup a ngrok endpoint that connects to my local MCP server and then I need to change the MCP connection details in the Retell console. Additionally I need to iterate on the prompt and once it's complete copy it and any other configuration details to the production agent. Doing this means we can run a service that allows for development iteration and manages the single source of truth between agents.
+"Personally I'm developing an app where I need to setup a ngrok endpoint that connects to my local MCP server and then I need to change the MCP connection details in the Retell console. Additionally I need to iterate on the prompt and once it's complete copy it and any other configuration details to the production agent. Doing this means we can run a service that allows for development iteration and manages the single source of truth between agents."
 
 ---
 
