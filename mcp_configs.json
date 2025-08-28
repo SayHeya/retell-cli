@@ -1,0 +1,356 @@
+{
+  "mcp_server_templates": {
+    "zapier": {
+      "name": "Zapier Integration",
+      "description": "Connect to Zapier workflows and automations",
+      "server_url": "https://api.zapier.com/mcp",
+      "tools": [
+        {
+          "name": "trigger_zap",
+          "description": "Trigger a Zapier automation",
+          "headers": {
+            "Authorization": "Bearer YOUR_ZAPIER_TOKEN"
+          },
+          "query_params": {
+            "workspace_id": "YOUR_WORKSPACE_ID"
+          }
+        }
+      ]
+    },
+    "salesforce": {
+      "name": "Salesforce CRM",
+      "description": "Connect to Salesforce for customer data",
+      "server_url": "https://your-instance.salesforce.com/services/mcp",
+      "tools": [
+        {
+          "name": "lookup_contact",
+          "description": "Look up contact information",
+          "headers": {
+            "Authorization": "Bearer YOUR_SF_TOKEN",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "name": "create_lead",
+          "description": "Create a new lead in Salesforce",
+          "headers": {
+            "Authorization": "Bearer YOUR_SF_TOKEN",
+            "Content-Type": "application/json"
+          }
+        }
+      ]
+    },
+    "calendly": {
+      "name": "Calendly Scheduling",
+      "description": "Schedule meetings via Calendly",
+      "server_url": "https://api.calendly.com/mcp",
+      "tools": [
+        {
+          "name": "schedule_meeting",
+          "description": "Schedule a meeting",
+          "headers": {
+            "Authorization": "Bearer YOUR_CALENDLY_TOKEN"
+          },
+          "query_params": {
+            "user": "YOUR_CALENDLY_USER"
+          }
+        }
+      ]
+    },
+    "hubspot": {
+      "name": "HubSpot CRM",
+      "description": "Connect to HubSpot for customer management",
+      "server_url": "https://api.hubapi.com/mcp",
+      "tools": [
+        {
+          "name": "get_contact",
+          "description": "Retrieve contact information",
+          "headers": {
+            "Authorization": "Bearer YOUR_HUBSPOT_TOKEN"
+          }
+        },
+        {
+          "name": "create_ticket",
+          "description": "Create support ticket",
+          "headers": {
+            "Authorization": "Bearer YOUR_HUBSPOT_TOKEN"
+          }
+        }
+      ]
+    },
+    "custom_api": {
+      "name": "Custom API",
+      "description": "Connect to your custom API endpoint",
+      "server_url": "https://your-api.com/mcp",
+      "tools": [
+        {
+          "name": "custom_function",
+          "description": "Call custom API function",
+          "headers": {
+            "Authorization": "Bearer YOUR_API_TOKEN",
+            "X-API-Version": "v1"
+          },
+          "query_params": {
+            "format": "json"
+          }
+        }
+      ]
+    },
+    "airtable": {
+      "name": "Airtable Database",
+      "description": "Connect to Airtable for data management",
+      "server_url": "https://api.airtable.com/v0/mcp",
+      "tools": [
+        {
+          "name": "get_records",
+          "description": "Retrieve records from Airtable",
+          "headers": {
+            "Authorization": "Bearer YOUR_AIRTABLE_TOKEN"
+          },
+          "query_params": {
+            "base_id": "YOUR_BASE_ID"
+          }
+        },
+        {
+          "name": "create_record",
+          "description": "Create new record in Airtable",
+          "headers": {
+            "Authorization": "Bearer YOUR_AIRTABLE_TOKEN"
+          }
+        }
+      ]
+    }
+  },
+  "agent_templates": {
+    "customer_service": {
+      "agent_name": "Customer Service Bot",
+      "voice_id": "11labs-Adrian",
+      "language": "en-US",
+      "voice_speed": 1.0,
+      "voice_temperature": 0.8,
+      "interruption_sensitivity": 0.6,
+      "responsiveness": 0.8,
+      "enable_backchannel": true,
+      "backchannel_frequency": 0.7,
+      "ambient_sound": "office",
+      "boosted_keywords": ["support", "help", "issue", "problem"],
+      "end_call_after_silence_ms": 300000,
+      "enable_voicemail_detection": true,
+      "voicemail_message": "Thank you for calling. Please leave a message and we'll get back to you.",
+      "post_call_analysis_data": [
+        {
+          "type": "string", 
+          "name": "issue_category",
+          "description": "The category of customer issue"
+        },
+        {
+          "type": "string",
+          "name": "resolution_status", 
+          "description": "Whether the issue was resolved"
+        }
+      ]
+    },
+    "sales_assistant": {
+      "agent_name": "Sales Assistant",
+      "voice_id": "11labs-Amy",
+      "language": "en-US",
+      "voice_speed": 1.1,
+      "voice_temperature": 1.2,
+      "interruption_sensitivity": 0.7,
+      "responsiveness": 0.9,
+      "enable_backchannel": true,
+      "backchannel_frequency": 0.8,
+      "ambient_sound": "none",
+      "boosted_keywords": ["price", "discount", "demo", "trial"],
+      "end_call_after_silence_ms": 240000,
+      "post_call_analysis_data": [
+        {
+          "type": "string",
+          "name": "lead_score",
+          "description": "Score the quality of the lead (hot/warm/cold)"
+        },
+        {
+          "type": "string", 
+          "name": "next_action",
+          "description": "Recommended follow-up action"
+        }
+      ]
+    },
+    "appointment_scheduler": {
+      "agent_name": "Appointment Scheduler",
+      "voice_id": "openai-Alloy", 
+      "language": "en-US",
+      "voice_speed": 0.95,
+      "voice_temperature": 0.9,
+      "interruption_sensitivity": 0.5,
+      "responsiveness": 0.8,
+      "enable_backchannel": true,
+      "ambient_sound": "none",
+      "boosted_keywords": ["appointment", "schedule", "calendar", "time"],
+      "end_call_after_silence_ms": 180000,
+      "post_call_analysis_data": [
+        {
+          "type": "string",
+          "name": "appointment_scheduled",
+          "description": "Whether an appointment was successfully scheduled"
+        },
+        {
+          "type": "string",
+          "name": "appointment_datetime", 
+          "description": "The scheduled appointment date and time"
+        }
+      ]
+    }
+  },
+  "llm_templates": {
+    "customer_service": {
+      "general_prompt": "You are a helpful customer service representative for [COMPANY NAME]. Your role is to:\n\n1. Listen actively to customer concerns\n2. Provide clear, accurate information\n3. Escalate complex issues when appropriate\n4. Maintain a professional and empathetic tone\n5. Confirm customer satisfaction before ending calls\n\nAlways ask clarifying questions when the customer's issue is unclear. If you cannot resolve an issue, offer to transfer to a specialist or take detailed notes for follow-up.",
+      "begin_message": "Hello! Thank you for calling [COMPANY NAME] customer support. My name is Alex, and I'm here to help you today. How can I assist you?",
+      "model_name": "gpt-4o-mini",
+      "states": [
+        {
+          "name": "greeting",
+          "state_prompt": "Greet the customer warmly and ask how you can help",
+          "tools": []
+        },
+        {
+          "name": "issue_assessment", 
+          "state_prompt": "Listen to the customer's issue and determine the appropriate resolution path",
+          "tools": [
+            {
+              "type": "mcp",
+              "name": "lookup_customer",
+              "description": "Look up customer account information"
+            }
+          ]
+        },
+        {
+          "name": "resolution",
+          "state_prompt": "Work to resolve the customer's issue or escalate if needed",
+          "tools": [
+            {
+              "type": "transfer_call",
+              "name": "transfer_to_specialist",
+              "description": "Transfer to a human specialist"
+            }
+          ]
+        }
+      ]
+    },
+    "sales_outbound": {
+      "general_prompt": "You are a professional sales representative for [COMPANY NAME]. Your goal is to:\n\n1. Build rapport with prospects\n2. Understand their business needs and pain points\n3. Present relevant solutions\n4. Handle objections professionally\n5. Schedule follow-up meetings or demos\n\nKeep the conversation natural and consultative. Focus on value, not just features. If the prospect isn't interested, respect their time and offer to follow up later.",
+      "begin_message": "Hi there! This is Sarah from [COMPANY NAME]. I hope you're having a great day. I'm reaching out because I noticed your company might benefit from our [SOLUTION]. Do you have a quick minute to chat?",
+      "model_name": "gpt-4o",
+      "states": [
+        {
+          "name": "opener",
+          "state_prompt": "Open the conversation with a warm greeting and value proposition",
+          "tools": []
+        },
+        {
+          "name": "discovery",
+          "state_prompt": "Ask questions to understand their business needs and challenges",
+          "tools": [
+            {
+              "type": "mcp",
+              "name": "company_research",
+              "description": "Research the prospect's company"
+            }
+          ]
+        },
+        {
+          "name": "presentation",
+          "state_prompt": "Present solutions that address their specific needs",
+          "tools": []
+        },
+        {
+          "name": "closing",
+          "state_prompt": "Schedule next steps or follow-up",
+          "tools": [
+            {
+              "type": "book_appointment_cal",
+              "name": "schedule_demo",
+              "description": "Schedule product demo"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "deployment_configs": {
+    "production": {
+      "voice_speed": 1.0,
+      "voice_temperature": 0.9,
+      "interruption_sensitivity": 0.6,
+      "responsiveness": 0.8,
+      "enable_voicemail_detection": true,
+      "opt_out_sensitive_data_storage": false,
+      "end_call_after_silence_ms": 300000,
+      "max_call_duration_ms": 1800000
+    },
+    "testing": {
+      "voice_speed": 1.2,
+      "voice_temperature": 1.0, 
+      "interruption_sensitivity": 0.8,
+      "responsiveness": 0.9,
+      "enable_voicemail_detection": false,
+      "opt_out_sensitive_data_storage": true,
+      "end_call_after_silence_ms": 120000,
+      "max_call_duration_ms": 600000
+    },
+    "conservative": {
+      "voice_speed": 0.9,
+      "voice_temperature": 0.7,
+      "interruption_sensitivity": 0.4,
+      "responsiveness": 0.7,
+      "enable_voicemail_detection": true,
+      "opt_out_sensitive_data_storage": false,
+      "end_call_after_silence_ms": 450000,
+      "max_call_duration_ms": 2400000
+    }
+  },
+  "webhook_examples": {
+    "call_started": {
+      "event": "call_started",
+      "call": {
+        "call_id": "call_12345",
+        "agent_id": "agent_67890",
+        "call_status": "in_progress",
+        "from_number": "+1234567890",
+        "to_number": "+0987654321",
+        "start_timestamp": 1703413636133
+      }
+    },
+    "call_ended": {
+      "event": "call_ended", 
+      "call": {
+        "call_id": "call_12345",
+        "agent_id": "agent_67890",
+        "call_status": "ended",
+        "from_number": "+1234567890",
+        "to_number": "+0987654321",
+        "start_timestamp": 1703413636133,
+        "end_timestamp": 1703413696133,
+        "duration_ms": 60000,
+        "transcript": "Agent: Hello, how can I help you?\nUser: I need help with my account.",
+        "post_call_analysis": {
+          "customer_satisfaction": "satisfied",
+          "issue_resolved": "yes"
+        }
+      }
+    },
+    "call_analyzed": {
+      "event": "call_analyzed",
+      "call": {
+        "call_id": "call_12345", 
+        "agent_id": "agent_67890",
+        "analysis": {
+          "sentiment": "positive",
+          "topics": ["account help", "billing"],
+          "resolution_status": "resolved",
+          "customer_satisfaction_score": 8.5
+        }
+      }
+    }
+  }
+}
