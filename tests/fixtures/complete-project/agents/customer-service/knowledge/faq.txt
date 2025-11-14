@@ -1,0 +1,13 @@
+# Frequently Asked Questions
+
+## Shipping
+Q: How long does shipping take?
+A: Standard shipping takes 5-7 business days. Express shipping is 2-3 business days.
+
+## Returns
+Q: What is your return policy?
+A: We accept returns within 30 days of purchase. Items must be unused and in original packaging.
+
+## Contact
+Q: How can I contact support?
+A: You can reach us at support@acme.com or call 1-800-ACME-SUP during business hours (9am-5pm EST).

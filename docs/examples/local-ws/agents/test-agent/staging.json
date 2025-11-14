@@ -1,0 +1,9 @@
+{
+  "workspace": "staging",
+  "agent_id": "agent_6e5776554f2afa8474c79221dd",
+  "llm_id": "llm_64f3a858642068bb4acba0757f5d",
+  "kb_id": null,
+  "last_sync": "2025-11-14T04:59:29.365Z",
+  "config_hash": "sha256:cdb159094adf00f7737ed5a7eb57c0484c3766bcacecd0c2e35b86e4eeceead5",
+  "retell_version": null
+}

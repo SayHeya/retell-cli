@@ -1,0 +1,9 @@
+{
+  "workspace": "staging",
+  "agent_id": "agent_staging_sales_111222",
+  "llm_id": "llm_staging_sales_333444",
+  "kb_id": null,
+  "last_sync": "2025-11-14T09:15:00.000Z",
+  "config_hash": "sha256:sales_staging_hash_aabbcc",
+  "retell_version": 3
+}

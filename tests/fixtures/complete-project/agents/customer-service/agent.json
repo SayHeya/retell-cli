@@ -1,0 +1,68 @@
+{
+  "agent_name": "Acme Customer Service",
+  "voice_id": "11labs-Adrian",
+  "voice_speed": 1.0,
+  "voice_temperature": 0.8,
+  "interruption_sensitivity": 0.5,
+  "responsiveness": 0.8,
+  "language": "en-US",
+  "enable_backchannel": true,
+  "backchannel_frequency": 0.8,
+  "ambient_sound": "office",
+  "boosted_keywords": ["support", "help", "issue", "refund"],
+  "pronunciation_dictionary": [
+    {
+      "word": "API",
+      "pronunciation": "A P I"
+    }
+  ],
+  "normalize_for_speech": true,
+  "webhook_url": "https://api.acme.com/webhook",
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "prompt_config": {
+      "sections": [
+        "base/greeting",
+        "base/tone-professional",
+        "customer-service/order-lookup",
+        "customer-service/refund-policy",
+        "base/closing"
+      ],
+      "variables": {
+        "company_name": "Acme Corp",
+        "support_hours": "9am-5pm EST",
+        "user_id": "OVERRIDE",
+        "session_token": "OVERRIDE"
+      },
+      "dynamic_variables": {
+        "customer_name": {
+          "type": "string",
+          "description": "The customer's full name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer's phone number"
+        },
+        "order_id": {
+          "type": "string",
+          "description": "Customer's order ID"
+        }
+      }
+    },
+    "begin_message": "Hello! Thank you for contacting Acme Corp. How can I help you today?",
+    "tools": []
+  },
+  "post_call_analysis_data": [
+    {
+      "name": "issue_resolved",
+      "type": "boolean",
+      "description": "Was the customer's issue resolved?"
+    },
+    {
+      "name": "issue_category",
+      "type": "string",
+      "description": "Category of the customer's issue"
+    }
+  ]
+}

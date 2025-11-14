@@ -1,0 +1,29 @@
+{
+  "agent_name": "Customer Service Agent",
+  "voice_id": "11labs-Adrian",
+  "voice_speed": 1.0,
+  "language": "en-US",
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.7,
+    "prompt_config": {
+      "sections": [
+        "base/greeting",
+        "base/tone-professional",
+        "customer-service/order-lookup"
+      ],
+      "variables": {
+        "company_name": "Acme Corp",
+        "support_hours": "9am-5pm EST",
+        "user_id": "OVERRIDE"
+      },
+      "dynamic_variables": {
+        "customer_name": {
+          "type": "string",
+          "description": "The customer's full name"
+        }
+      }
+    },
+    "begin_message": "Hello! How can I help you today?"
+  }
+}

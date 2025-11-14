@@ -1,0 +1,9 @@
+{
+  "workspace": "production",
+  "agent_id": "agent_prod_qrs456tuv789",
+  "llm_id": "llm_prod_wxy012zab345",
+  "kb_id": "kb_prod_cde678fgh901",
+  "last_sync": "2025-11-13T15:00:00.000Z",
+  "config_hash": "sha256:p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1",
+  "retell_version": 5
+}

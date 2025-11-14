@@ -1,0 +1,65 @@
+import { describe, expect, it } from '@jest/globals';
+import { Ok, Err, isOk, isErr, unwrap } from '../../../src/types/common.types';
+
+describe('Common Types', () => {
+  describe('Ok', () => {
+    it('should create successful result', () => {
+      const result = Ok('success value');
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.value).toBe('success value');
+      }
+    });
+  });
+
+  describe('Err', () => {
+    it('should create error result', () => {
+      const error = new Error('failure');
+      const result = Err(error);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe(error);
+      }
+    });
+  });
+
+  describe('isOk', () => {
+    it('should return true for Ok result', () => {
+      const result = Ok('value');
+      expect(isOk(result)).toBe(true);
+    });
+
+    it('should return false for Err result', () => {
+      const result = Err(new Error('error'));
+      expect(isOk(result)).toBe(false);
+    });
+  });
+
+  describe('isErr', () => {
+    it('should return true for Err result', () => {
+      const result = Err(new Error('error'));
+      expect(isErr(result)).toBe(true);
+    });
+
+    it('should return false for Ok result', () => {
+      const result = Ok('value');
+      expect(isErr(result)).toBe(false);
+    });
+  });
+
+  describe('unwrap', () => {
+    it('should return value for Ok result', () => {
+      const result = Ok('success');
+      expect(unwrap(result)).toBe('success');
+    });
+
+    it('should throw error for Err result', () => {
+      const error = new Error('test error');
+      const result = Err(error);
+
+      expect(() => unwrap(result)).toThrow(error);
+    });
+  });
+});

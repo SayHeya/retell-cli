@@ -1,0 +1,24 @@
+{
+  "staging": {
+    "kb_id": "kb_staging_jkl012mno345",
+    "files": {
+      "faq.txt": {
+        "file_id": "file_staging_001",
+        "hash": "sha256:faq_staging_hash_abc123",
+        "size_bytes": 512,
+        "last_sync": "2025-11-14T10:30:00.000Z"
+      }
+    }
+  },
+  "production": {
+    "kb_id": "kb_prod_cde678fgh901",
+    "files": {
+      "faq.txt": {
+        "file_id": "file_prod_001",
+        "hash": "sha256:faq_prod_hash_xyz789",
+        "size_bytes": 512,
+        "last_sync": "2025-11-13T15:00:00.000Z"
+      }
+    }
+  }
+}

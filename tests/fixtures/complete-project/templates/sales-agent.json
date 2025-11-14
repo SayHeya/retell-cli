@@ -1,0 +1,28 @@
+{
+  "agent_name": "Sales Agent Template",
+  "voice_id": "11labs-Kate",
+  "voice_speed": 1.1,
+  "language": "en-US",
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.8,
+    "prompt_config": {
+      "sections": [
+        "base/greeting",
+        "base/tone-casual",
+        "sales/qualification",
+        "base/closing"
+      ],
+      "variables": {
+        "company_name": "Your Company"
+      },
+      "dynamic_variables": {
+        "lead_name": {
+          "type": "string",
+          "description": "The lead's name"
+        }
+      }
+    },
+    "begin_message": "Hi there! Thanks for your interest in our products."
+  }
+}

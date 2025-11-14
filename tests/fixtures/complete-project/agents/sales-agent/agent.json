@@ -1,0 +1,36 @@
+{
+  "agent_name": "Acme Sales Agent",
+  "voice_id": "11labs-Kate",
+  "voice_speed": 1.1,
+  "voice_temperature": 0.9,
+  "language": "en-US",
+  "enable_backchannel": true,
+  "webhook_url": "https://api.acme.com/webhook/sales",
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.8,
+    "prompt_config": {
+      "sections": [
+        "base/greeting",
+        "base/tone-casual",
+        "sales/qualification",
+        "base/closing"
+      ],
+      "variables": {
+        "company_name": "Acme Corp"
+      },
+      "dynamic_variables": {
+        "lead_name": {
+          "type": "string",
+          "description": "The lead's name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Lead's phone number"
+        }
+      }
+    },
+    "begin_message": "Hi there! Thanks for your interest in Acme Corp. How can I help you today?",
+    "tools": []
+  }
+}

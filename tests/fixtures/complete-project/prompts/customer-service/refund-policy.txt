@@ -1,0 +1,6 @@
+Our refund policy:
+- Full refund within 30 days of purchase
+- Item must be unused and in original packaging
+- Shipping costs are non-refundable
+
+For support hours: {{support_hours}}

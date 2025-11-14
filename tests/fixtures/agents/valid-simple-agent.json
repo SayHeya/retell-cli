@@ -1,0 +1,9 @@
+{
+  "agent_name": "Test Agent",
+  "voice_id": "11labs-Adrian",
+  "language": "en-US",
+  "llm_config": {
+    "model": "gpt-4o-mini",
+    "general_prompt": "You are a helpful assistant."
+  }
+}

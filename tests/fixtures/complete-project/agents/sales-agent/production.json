@@ -1,0 +1,9 @@
+{
+  "workspace": "production",
+  "agent_id": "agent_prod_sales_999888",
+  "llm_id": "llm_prod_sales_777666",
+  "kb_id": null,
+  "last_sync": "2025-11-13T14:20:00.000Z",
+  "config_hash": "sha256:sales_prod_hash_xxyyzz",
+  "retell_version": 3
+}
