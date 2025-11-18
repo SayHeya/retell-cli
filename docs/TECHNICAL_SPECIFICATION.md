@@ -1185,6 +1185,94 @@ node dist/index.js --help
 4. **Dependency Auditing**: Run `npm audit` regularly
 5. **Error Messages**: Don't leak sensitive info in error messages
 
+## Workspace Configuration & Validation
+
+### Overview
+
+As of version 1.0.0, the CLI **requires** a `workspaces.json` file for all operations. This prevents accidental operations without explicit configuration.
+
+### Configuration Flow
+
+1. **Environment Variables** (`.env`):
+   ```env
+   RETELL_STAGING_API_KEY=key_xxx
+   RETELL_PRODUCTION_API_KEY=key_yyy
+   ```
+
+2. **Generate Configuration**:
+   ```bash
+   retell workspace init
+   ```
+
+3. **Result** (`workspaces.json`):
+   ```json
+   {
+     "staging": {
+       "api_key": "key_xxx",
+       "name": "Development Workspace",
+       "base_url": "https://api.retellai.com"
+     },
+     "production": {
+       "api_key": "key_yyy",
+       "name": "Production Workspace",
+       "base_url": "https://api.retellai.com"
+     }
+   }
+   ```
+
+### Validation Rules
+
+The `WorkspaceConfigLoader` validates:
+
+1. **File Existence**: `workspaces.json` must exist in project root
+2. **Valid JSON**: File must be properly formatted JSON
+3. **Required Workspaces**: Both `staging` and `production` must be present
+4. **API Keys**: Both workspaces must have non-empty `api_key` fields
+5. **Base URL**: Defaults to `https://api.retellai.com` if not specified
+
+### Error Handling
+
+| Error | Message | Solution |
+|-------|---------|----------|
+| File not found | `workspaces.json not found` | Run `retell workspace init` |
+| Missing workspace | `Missing 'staging' workspace` | Run `retell workspace init --force` |
+| Invalid API key | `Invalid or missing API key` | Check `.env` and regenerate |
+| Malformed JSON | `Invalid JSON in workspaces.json` | Regenerate with `--force` |
+
+### Implementation
+
+**Location**: `src/config/workspace-config.ts`
+
+**Key Methods**:
+- `load()`: Load and validate workspaces.json (required)
+- `getWorkspace(type)`: Get specific workspace configuration
+- `generateFromEnv()`: Generate workspaces.json from environment variables
+- `exists()`: Check if workspaces.json exists
+
+**Usage in Commands**:
+```typescript
+// All commands must load workspace config first
+const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(options.workspace);
+if (!workspaceConfigResult.success) {
+  throw workspaceConfigResult.error; // Prevents operation
+}
+```
+
+### Security Benefits
+
+1. **Explicit Configuration**: No silent fallbacks to environment variables
+2. **Validation Before Operations**: All API calls validated upfront
+3. **Clear Error Messages**: Users know exactly what's missing
+4. **Gitignore Protection**: Both `.env` and `workspaces.json` are gitignored
+
+### Workspace Limits
+
+Testing shows Retell AI workspaces can handle **≥100 agents**:
+- No hard limit encountered during testing
+- Successfully created 100 agents in ~6 minutes
+- No rate limiting or quota issues
+- See `WORKSPACE_LIMIT_TEST_RESULTS.md` for details
+
 ## Documentation Requirements
 
 1. **JSDoc Comments**: All public functions and classes

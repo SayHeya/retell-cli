@@ -53,7 +53,7 @@ async function executePush(
   const promptsPath = path.resolve(options.prompts);
 
   // 1. Load workspace config
-  const workspaceConfigResult = WorkspaceConfigLoader.getWorkspace(options.workspace);
+  const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(options.workspace);
   if (!workspaceConfigResult.success) {
     throw workspaceConfigResult.error;
   }
@@ -79,6 +79,54 @@ async function executePush(
   // 4. Read existing metadata
   const metadataResult = await MetadataManager.read(agentPath, options.workspace);
   const existingMetadata = metadataResult.success ? metadataResult.value : null;
+
+  // 4a. Production push protection - Must push to staging first
+  if (options.workspace === 'production') {
+    console.log('Validating staging deployment...');
+    const stagingMetadataResult = await MetadataManager.read(agentPath, 'staging');
+
+    if (!stagingMetadataResult.success) {
+      throw new Error(
+        '❌ Cannot push to production: Agent has not been pushed to staging.\n' +
+        '   Please push to staging first:\n' +
+        `   retell push ${agentName} -w staging`
+      );
+    }
+
+    const stagingMetadata = stagingMetadataResult.value;
+
+    // Check if staging is synced
+    if (!stagingMetadata.agent_id || !stagingMetadata.config_hash) {
+      throw new Error(
+        '❌ Cannot push to production: Staging agent is not properly synced.\n' +
+        '   Please push to staging first:\n' +
+        `   retell push ${agentName} -w staging`
+      );
+    }
+
+    // Check if staging is on the same version as local
+    const stagingInSync = HashCalculator.compareHashes(
+      currentHash as never,
+      stagingMetadata.config_hash as never
+    );
+
+    if (!stagingInSync && !options.force) {
+      throw new Error(
+        '❌ Cannot push to production: Local changes differ from staging.\n' +
+        '   Current local hash:  ' + currentHash.substring(0, 16) + '...\n' +
+        '   Staging hash:        ' + (stagingMetadata.config_hash?.substring(0, 16) || 'none') + '...\n' +
+        '   \n' +
+        '   You must push to staging first:\n' +
+        `   retell push ${agentName} -w staging\n` +
+        '   \n' +
+        '   Or use --force to push anyway (not recommended).'
+      );
+    }
+
+    console.log('✓ Staging validation passed');
+    console.log(`  Staging agent ID: ${stagingMetadata.agent_id}`);
+    console.log(`  Staging hash: ${stagingMetadata.config_hash?.substring(0, 16)}...`);
+  }
 
   // 5. Check if already in sync (unless --force)
   if (!options.force && existingMetadata !== null && existingMetadata.config_hash !== null) {

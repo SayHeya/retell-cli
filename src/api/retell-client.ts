@@ -280,4 +280,125 @@ export class RetellClient {
   getWorkspaceName(): string {
     return this.workspace.name;
   }
+
+  // ============================================================================
+  // Phone Number Operations
+  // ============================================================================
+
+  /**
+   * Create/purchase a new phone number.
+   *
+   * @param config - Phone number configuration
+   * @returns Result containing phone number response or error
+   */
+  async createPhoneNumber(config: Record<string, unknown>): Promise<Result<unknown, Error>> {
+    try {
+      const response = await this.client.phoneNumber.create(config as never);
+      return Ok(response);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error('Failed to create phone number in Retell')
+      );
+    }
+  }
+
+  /**
+   * Import phone number via SIP trunk.
+   *
+   * @param config - Import configuration
+   * @returns Result containing phone number response or error
+   */
+  async importPhoneNumber(config: Record<string, unknown>): Promise<Result<unknown, Error>> {
+    try {
+      const response = await this.client.phoneNumber.import(config as never);
+      return Ok(response);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error('Failed to import phone number in Retell')
+      );
+    }
+  }
+
+  /**
+   * List all phone numbers in the workspace.
+   *
+   * @returns Result containing list of phone numbers or error
+   */
+  async listPhoneNumbers(): Promise<Result<unknown[], Error>> {
+    try {
+      const response = await this.client.phoneNumber.list();
+      return Ok(response as unknown[]);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error('Failed to list phone numbers from Retell')
+      );
+    }
+  }
+
+  /**
+   * Get phone number details.
+   *
+   * @param phoneNumber - Phone number in E.164 format
+   * @returns Result containing phone number data or error
+   */
+  async getPhoneNumber(phoneNumber: string): Promise<Result<unknown, Error>> {
+    try {
+      const response = await this.client.phoneNumber.retrieve(phoneNumber);
+      return Ok(response);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error(`Failed to get phone number ${phoneNumber} from Retell`)
+      );
+    }
+  }
+
+  /**
+   * Update phone number configuration.
+   *
+   * @param phoneNumber - Phone number in E.164 format
+   * @param config - Update configuration
+   * @returns Result containing updated phone number data or error
+   */
+  async updatePhoneNumber(
+    phoneNumber: string,
+    config: Record<string, unknown>
+  ): Promise<Result<unknown, Error>> {
+    try {
+      const response = await this.client.phoneNumber.update(phoneNumber, config as never);
+      return Ok(response);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error(`Failed to update phone number ${phoneNumber} in Retell`)
+      );
+    }
+  }
+
+  /**
+   * Delete phone number.
+   *
+   * @param phoneNumber - Phone number in E.164 format
+   * @returns Result indicating success or error
+   */
+  async deletePhoneNumber(phoneNumber: string): Promise<Result<void, Error>> {
+    try {
+      await this.client.phoneNumber.delete(phoneNumber);
+      return Ok(undefined);
+    } catch (error) {
+      return Err(
+        error instanceof Error
+          ? error
+          : new Error(`Failed to delete phone number ${phoneNumber} from Retell`)
+      );
+    }
+  }
 }

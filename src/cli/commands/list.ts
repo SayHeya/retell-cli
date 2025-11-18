@@ -216,7 +216,7 @@ async function listWorkspaceAgents(workspace: WorkspaceType): Promise<void> {
   console.log(`\nListing agents from ${workspace} workspace...\n`);
 
   // Load workspace config
-  const workspaceConfigResult = WorkspaceConfigLoader.getWorkspace(workspace);
+  const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(workspace);
   if (!workspaceConfigResult.success) {
     throw workspaceConfigResult.error;
   }

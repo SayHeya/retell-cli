@@ -1,3 +1,6 @@
+templates/
+agents/
+
 # Dependencies
 node_modules/
 
@@ -15,6 +18,12 @@ coverage/
 
 # Workspace credentials (IMPORTANT: Never commit API keys)
 workspaces.json
+
+# Test agents (generated for testing)
+test-agents-*
+test-agents-100/
+agents/test-*
+agents/agent-*
 
 # OS files
 .DS_Store

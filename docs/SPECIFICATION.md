@@ -1426,15 +1426,63 @@ retell release agents/customer-service --kb-only
 
 ## Configuration
 
+### Workspace Configuration (Required)
+
+As of v1.0.0, the CLI **requires** `workspaces.json` for all operations.
+
+**Setup Steps:**
+
+1. Create `.env` with API keys:
+   ```env
+   RETELL_STAGING_API_KEY=key_xxx
+   RETELL_PRODUCTION_API_KEY=key_yyy
+   ```
+
+2. Generate `workspaces.json`:
+   ```bash
+   retell workspace init
+   ```
+
+3. Result:
+   ```json
+   {
+     "staging": {
+       "api_key": "key_xxx",
+       "name": "Development Workspace",
+       "base_url": "https://api.retellai.com"
+     },
+     "production": {
+       "api_key": "key_yyy",
+       "name": "Production Workspace",
+       "base_url": "https://api.retellai.com"
+     }
+   }
+   ```
+
+**Validation:**
+- File existence checked before all operations
+- Both `staging` and `production` workspaces required
+- API keys must be non-empty
+- Clear error messages guide users to solutions
+
+**Commands:**
+```bash
+# Generate from .env
+retell workspace init
+
+# Force regenerate
+retell workspace init --force
+```
+
 ### Environment Variables
 
 ```bash
-# Override workspace API keys
-RETELL_STAGING_API_KEY=sk_staging_...
-RETELL_PRODUCTION_API_KEY=sk_prod_...
+# Required in .env for workspace init
+RETELL_STAGING_API_KEY=key_staging_...
+RETELL_PRODUCTION_API_KEY=key_prod_...
 
-# Override base URL
-RETELL_API_BASE_URL=https://api.retellai.com/v2
+# Optional overrides
+RETELL_BASE_URL=https://api.retellai.com
 
 # CI/CD mode (non-interactive)
 RETELL_CI=true
@@ -1455,17 +1503,24 @@ Global CLI configuration:
 
 ## Security Considerations
 
-1. **workspaces.json should be in .gitignore**
+1. **workspaces.json and .env MUST be in .gitignore**
    - Contains API keys
-   - Use environment variables in CI/CD
+   - NEVER commit to version control
+   - Use `retell workspace init` to regenerate locally
 
 2. **Metadata files ARE version controlled**
    - staging.json, production.json
    - Contains agent_id, llm_id but not secrets
+   - Safe to commit
 
 3. **Knowledge base files**
    - Version controlled
    - Ensure no sensitive data in committed files
+
+4. **Workspace validation**
+   - Prevents operations without explicit configuration
+   - No silent fallbacks to environment variables
+   - All commands validate workspace config first
 
 ## Git Integration
 

@@ -26,7 +26,10 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2 && npm run test:cli",
     "prepublishOnly": "npm run build",
-    "precommit": "npm run lint && npm run type-check && npm run test:unit"
+    "precommit": "npm run lint && npm run type-check && npm run test:unit",
+    "create-100-agents": "bash scripts/create-100-agents.sh",
+    "create-100-agents:ts": "ts-node scripts/create-100-agents.ts",
+    "push-100-agents": "bash scripts/push-agents-with-rate-limit.sh test-agents-100 staging 2"
   },
   "keywords": [
     "retell",
