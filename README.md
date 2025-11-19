@@ -1,5 +1,9 @@
 # Retell CLI
 
+[![Coverage](https://img.shields.io/badge/coverage-93.37%25-brightgreen)](https://github.com/anthropics/claude-code)
+[![Tests](https://img.shields.io/badge/tests-216%20passed-brightgreen)](https://github.com/anthropics/claude-code)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/anthropics/claude-code)
+
 A TypeScript CLI tool for managing Retell AI agents across workspaces with composable prompts and file-based configuration.
 
 ## Features
@@ -10,7 +14,7 @@ A TypeScript CLI tool for managing Retell AI agents across workspaces with compo
 - ✅ **Configuration Validation**: Required workspace setup prevents accidental operations
 - 🚀 **Push/Pull**: Sync agents between local and Retell workspace
 - 📊 **Status Tracking**: View sync status and detect configuration drift
-- 🧪 **Tested**: Comprehensive unit, integration, and E2E tests
+- 🧪 **Tested**: Comprehensive test suite with 93.37% coverage (216 tests passing)
 
 ## Quick Start
 

@@ -1,0 +1,109 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:ci
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Generate coverage summary
+        run: |
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage data has been uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Extract coverage percentages from lcov.info
+          LINES_COVERED=$(grep -o "LF:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          LINES_HIT=$(grep -o "LH:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          FUNCS_COVERED=$(grep -o "FNF:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          FUNCS_HIT=$(grep -o "FNH:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          BRANCHES_COVERED=$(grep -o "BRF:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          BRANCHES_HIT=$(grep -o "BRH:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+
+          # Calculate percentages
+          LINE_PCT=$(echo "scale=2; $LINES_HIT * 100 / $LINES_COVERED" | bc)
+          FUNC_PCT=$(echo "scale=2; $FUNCS_HIT * 100 / $FUNCS_COVERED" | bc)
+          BRANCH_PCT=$(echo "scale=2; $BRANCHES_HIT * 100 / $BRANCHES_COVERED" | bc)
+
+          echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lines | ${LINE_PCT}% (${LINES_HIT}/${LINES_COVERED}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Functions | ${FUNC_PCT}% (${FUNCS_HIT}/${FUNCS_COVERED}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branches | ${BRANCH_PCT}% (${BRANCHES_HIT}/${BRANCHES_COVERED}) |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Archive coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            !coverage/**/*.json
+          retention-days: 30
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const lcov = fs.readFileSync('coverage/lcov.info', 'utf8');
+
+            // Parse coverage data
+            const lines = lcov.match(/LF:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+            const linesHit = lcov.match(/LH:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+            const funcs = lcov.match(/FNF:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+            const funcsHit = lcov.match(/FNH:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+            const branches = lcov.match(/BRF:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+            const branchesHit = lcov.match(/BRH:(\d+)/g)?.map(m => parseInt(m.split(':')[1])).reduce((a, b) => a + b, 0) || 0;
+
+            const linePct = ((linesHit / lines) * 100).toFixed(2);
+            const funcPct = ((funcsHit / funcs) * 100).toFixed(2);
+            const branchPct = ((branchesHit / branches) * 100).toFixed(2);
+
+            const comment = `## 📊 Coverage Report
+
+            | Metric | Coverage |
+            |--------|----------|
+            | Lines | ${linePct}% (${linesHit}/${lines}) |
+            | Functions | ${funcPct}% (${funcsHit}/${funcs}) |
+            | Branches | ${branchPct}% (${branchesHit}/${branches}) |
+
+            _Coverage report generated for commit ${context.sha.substring(0, 7)}_`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
