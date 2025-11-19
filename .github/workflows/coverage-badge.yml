@@ -31,12 +31,15 @@ jobs:
       - name: Extract coverage percentage
         id: coverage
         run: |
-          # Parse coverage from Jest output
-          COVERAGE=$(grep -oP 'All files\s+\|\s+\K[\d.]+' coverage/lcov-report/index.html || echo "0")
+          # Parse coverage from lcov.info file
+          LINES_COVERED=$(grep -o "LF:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+          LINES_HIT=$(grep -o "LH:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
 
-          # Alternative: parse from coverage-summary.json if it exists
-          if [ -f coverage/coverage-summary.json ]; then
-            COVERAGE=$(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.lines.pct")
+          # Calculate percentage
+          if [ "$LINES_COVERED" -gt 0 ]; then
+            COVERAGE=$(awk "BEGIN {printf \"%.2f\", ($LINES_HIT / $LINES_COVERED) * 100}")
+          else
+            COVERAGE="0"
           fi
 
           echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT

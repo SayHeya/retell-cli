@@ -1,8 +1,8 @@
 # Retell CLI
 
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/suisuss-heya/a32f943eba9c91d240ffdc9c02c8872c/raw/retell-cli-coverage.json)](https://github.com/anthropics/claude-code)
-[![Tests](https://img.shields.io/badge/tests-216%20passed-brightgreen)](https://github.com/anthropics/claude-code)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/anthropics/claude-code)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/suisuss-heya/a32f943eba9c91d240ffdc9c02c8872c/raw/retell-cli-coverage.json)](https://gist.github.com/suisuss-heya/a32f943eba9c91d240ffdc9c02c8872c)
+[![Tests](https://img.shields.io/badge/tests-216%20passed-brightgreen)](https://github.com/suisuss-heya/retell-dev)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/suisuss-heya/retell-dev)
 
 A TypeScript CLI tool for managing Retell AI agents across workspaces with composable prompts and file-based configuration.
 
