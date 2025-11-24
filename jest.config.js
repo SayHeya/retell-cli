@@ -4,16 +4,30 @@ module.exports = {
   roots: ['<rootDir>/tests'],
   testMatch: ['**/*.test.ts', '**/*.spec.ts'],
 
-  // Module name mapping for path aliases
-  moduleNameMapper: {
-    '^@commands/(.*)$': '<rootDir>/src/commands/$1',
-    '^@core/(.*)$': '<rootDir>/src/core/$1',
-    '^@api/(.*)$': '<rootDir>/src/api/$1',
-    '^@schemas/(.*)$': '<rootDir>/src/schemas/$1',
-    '^@types/(.*)$': '<rootDir>/src/types/$1',
-    '^@utils/(.*)$': '<rootDir>/src/utils/$1',
-    '^@config/(.*)$': '<rootDir>/src/config/$1',
+  // Transform packages with ts-jest
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.json',
+    }],
   },
+
+  // Module name mapping for path aliases - use both pathsToModuleNameMapper and manual mappings
+  moduleNameMapper: {
+    // Map to the controllers package
+    '^@heya/retell\\.controllers$': '<rootDir>/packages/controllers/src/index',
+    '^@heya/retell\\.controllers/(.*)$': '<rootDir>/packages/controllers/src/$1',
+    // Legacy path aliases mapped to new locations
+    '^@commands/(.*)$': '<rootDir>/src/cli/commands/$1',
+    '^@core/(.*)$': '<rootDir>/packages/controllers/src/core/$1',
+    '^@api/(.*)$': '<rootDir>/packages/controllers/src/services/$1',
+    '^@schemas/(.*)$': '<rootDir>/packages/controllers/src/schemas/$1',
+    '^@types/(.*)$': '<rootDir>/packages/controllers/src/types/$1',
+    '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@config/(.*)$': '<rootDir>/packages/controllers/src/services/$1',
+  },
+
+  // Tell Jest where to find modules
+  modulePaths: ['<rootDir>'],
 
   // Coverage configuration
   collectCoverageFrom: [

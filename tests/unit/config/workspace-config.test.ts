@@ -1,10 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
-import { WorkspaceConfigLoader } from '@config/workspace-config';
+import { WorkspaceConfigService, type RetellError } from '@heya/retell.controllers';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
-describe('WorkspaceConfigLoader', () => {
+describe('WorkspaceConfigService', () => {
   let originalEnv: NodeJS.ProcessEnv;
   let originalCwd: string;
   let tempDir: string;
@@ -49,7 +49,7 @@ describe('WorkspaceConfigLoader', () => {
         JSON.stringify(workspacesConfig, null, 2)
       );
 
-      const result = await WorkspaceConfigLoader.load();
+      const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(true);
       const config = (result as { success: true; value: unknown }).value;
@@ -86,7 +86,7 @@ describe('WorkspaceConfigLoader', () => {
         JSON.stringify(workspacesConfig, null, 2)
       );
 
-      const result = await WorkspaceConfigLoader.load();
+      const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(true);
       const config = (result as { success: true; value: unknown }).value;
@@ -101,10 +101,10 @@ describe('WorkspaceConfigLoader', () => {
     });
 
     it('should return error if workspaces.json is missing', async () => {
-      const result = await WorkspaceConfigLoader.load();
+      const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(false);
-      const error = (result as { success: false; error: Error }).error;
+      const error = (result as { success: false; error: RetellError }).error;
       expect(error.message).toContain('workspaces.json not found');
     });
 
@@ -121,10 +121,10 @@ describe('WorkspaceConfigLoader', () => {
         JSON.stringify(workspacesConfig, null, 2)
       );
 
-      const result = await WorkspaceConfigLoader.load();
+      const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(false);
-      const error = (result as { success: false; error: Error }).error;
+      const error = (result as { success: false; error: RetellError }).error;
       expect(error.message).toContain('staging');
     });
 
@@ -141,10 +141,10 @@ describe('WorkspaceConfigLoader', () => {
         JSON.stringify(workspacesConfig, null, 2)
       );
 
-      const result = await WorkspaceConfigLoader.load();
+      const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(false);
-      const error = (result as { success: false; error: Error }).error;
+      const error = (result as { success: false; error: RetellError }).error;
       expect(error.message).toContain('production');
     });
   });
@@ -169,7 +169,7 @@ describe('WorkspaceConfigLoader', () => {
     });
 
     it('should get staging workspace config', async () => {
-      const result = await WorkspaceConfigLoader.getWorkspace('staging');
+      const result = await WorkspaceConfigService.getWorkspace('staging');
 
       expect(result.success).toBe(true);
       const config = (result as { success: true; value: unknown }).value;
@@ -180,7 +180,7 @@ describe('WorkspaceConfigLoader', () => {
     });
 
     it('should get production workspace config', async () => {
-      const result = await WorkspaceConfigLoader.getWorkspace('production');
+      const result = await WorkspaceConfigService.getWorkspace('production');
 
       expect(result.success).toBe(true);
       const config = (result as { success: true; value: unknown }).value;
@@ -194,7 +194,7 @@ describe('WorkspaceConfigLoader', () => {
       // Remove workspaces.json
       await fs.unlink(path.join(tempDir, 'workspaces.json'));
 
-      const result = await WorkspaceConfigLoader.getWorkspace('staging');
+      const result = await WorkspaceConfigService.getWorkspace('staging');
 
       expect(result.success).toBe(false);
 
@@ -212,16 +212,16 @@ describe('WorkspaceConfigLoader', () => {
       process.env['RETELL_STAGING_API_KEY'] = 'staging_key_123';
       process.env['RETELL_PRODUCTION_API_KEY'] = 'prod_key_456';
 
-      const result = await WorkspaceConfigLoader.generateFromEnv();
+      const result = await WorkspaceConfigService.generateFromEnv();
 
       expect(result.success).toBe(true);
 
       // Verify file was created
-      const fileExists = await WorkspaceConfigLoader.exists();
+      const fileExists = await WorkspaceConfigService.exists();
       expect(fileExists).toBe(true);
 
       // Verify content
-      const loadResult = await WorkspaceConfigLoader.load();
+      const loadResult = await WorkspaceConfigService.load();
       expect(loadResult.success).toBe(true);
       if (loadResult.success) {
         expect(loadResult.value.staging.apiKey).toBe('staging_key_123');
@@ -234,11 +234,11 @@ describe('WorkspaceConfigLoader', () => {
       process.env['RETELL_PRODUCTION_API_KEY'] = 'prod_key_456';
       process.env['RETELL_BASE_URL'] = 'https://custom.retell.com';
 
-      const result = await WorkspaceConfigLoader.generateFromEnv();
+      const result = await WorkspaceConfigService.generateFromEnv();
 
       expect(result.success).toBe(true);
 
-      const loadResult = await WorkspaceConfigLoader.load();
+      const loadResult = await WorkspaceConfigService.load();
       expect(loadResult.success).toBe(true);
       if (loadResult.success) {
         expect(loadResult.value.staging.baseUrl).toBe('https://custom.retell.com');
@@ -250,7 +250,7 @@ describe('WorkspaceConfigLoader', () => {
       process.env['RETELL_PRODUCTION_API_KEY'] = 'prod_key_456';
       delete process.env['RETELL_STAGING_API_KEY'];
 
-      const result = await WorkspaceConfigLoader.generateFromEnv();
+      const result = await WorkspaceConfigService.generateFromEnv();
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -262,7 +262,7 @@ describe('WorkspaceConfigLoader', () => {
       process.env['RETELL_STAGING_API_KEY'] = 'staging_key_123';
       delete process.env['RETELL_PRODUCTION_API_KEY'];
 
-      const result = await WorkspaceConfigLoader.generateFromEnv();
+      const result = await WorkspaceConfigService.generateFromEnv();
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -277,7 +277,7 @@ describe('WorkspaceConfigLoader', () => {
       // Create file first
       await fs.writeFile(path.join(tempDir, 'workspaces.json'), '{}');
 
-      const result = await WorkspaceConfigLoader.generateFromEnv();
+      const result = await WorkspaceConfigService.generateFromEnv();
 
       expect(result.success).toBe(false);
       if (!result.success) {

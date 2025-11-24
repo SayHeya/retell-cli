@@ -29,7 +29,13 @@
     "baseUrl": ".",
     "paths": {
       "@heya/retell.controllers": ["packages/controllers/src"],
-      "@heya/retell.controllers/*": ["packages/controllers/src/*"]
+      "@heya/retell.controllers/*": ["packages/controllers/src/*"],
+      "@core/*": ["packages/controllers/src/core/*"],
+      "@schemas/*": ["packages/controllers/src/schemas/*"],
+      "@types/*": ["packages/controllers/src/types/*"],
+      "@api/*": ["packages/controllers/src/services/*"],
+      "@config/*": ["packages/controllers/src/services/*"],
+      "@commands/*": ["src/cli/commands/*"]
     },
     "resolveJsonModule": true,
     "esModuleInterop": true,
