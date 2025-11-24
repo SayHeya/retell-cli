@@ -3,8 +3,7 @@
  */
 
 import { Command } from 'commander';
-import { WorkspaceController } from '@heya/retell.controllers';
-import { handleError } from '../errors/cli-error-handler';
+import { WorkspaceConfigLoader } from '../../config/workspace-config';
 
 export const workspaceInitCommand = new Command('init')
   .description('Generate workspaces.json from environment variables')
@@ -13,7 +12,8 @@ export const workspaceInitCommand = new Command('init')
     try {
       await executeWorkspaceInit(options);
     } catch (error) {
-      handleError(error);
+      console.error('Workspace init failed:', error instanceof Error ? error.message : error);
+      process.exit(1);
     }
   });
 
@@ -22,20 +22,18 @@ type WorkspaceInitOptions = {
 };
 
 async function executeWorkspaceInit(options: WorkspaceInitOptions): Promise<void> {
-  console.log('\nGenerating workspaces.json from environment variables...\n');
-
-  const controller = new WorkspaceController();
+  console.log('\n📝 Generating workspaces.json from environment variables...\n');
 
   // Check if file exists and force not set
-  const exists = await controller.exists();
+  const exists = await WorkspaceConfigLoader.exists();
   if (exists && !options.force) {
-    console.error('workspaces.json already exists. Use --force to overwrite.');
+    console.error('❌ workspaces.json already exists. Use --force to overwrite.');
     process.exit(1);
   }
 
   // If force, remove existing file
   if (exists && options.force) {
-    console.log('Overwriting existing workspaces.json...\n');
+    console.log('⚠️  Overwriting existing workspaces.json...\n');
     const fs = await import('fs/promises');
     const path = await import('path');
     const workspacesPath = path.resolve(process.cwd(), 'workspaces.json');
@@ -43,16 +41,16 @@ async function executeWorkspaceInit(options: WorkspaceInitOptions): Promise<void
   }
 
   // Generate from environment
-  const result = await controller.init({ force: options.force });
+  const result = await WorkspaceConfigLoader.generateFromEnv();
 
   if (!result.success) {
     throw result.error;
   }
 
-  console.log('Successfully created workspaces.json');
+  console.log('✅ Successfully created workspaces.json');
   console.log('\nWorkspace configuration:');
   console.log('  - staging: Development Workspace');
   console.log('  - production: Production Workspace');
-  console.log('\nTip: Review and customize workspaces.json if needed');
+  console.log('\n💡 Tip: Review and customize workspaces.json if needed');
   console.log('');
 }

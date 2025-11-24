@@ -26,15 +26,10 @@
 
     /* Module Resolution */
     "moduleResolution": "node",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@commands/*": ["commands/*"],
-      "@core/*": ["core/*"],
-      "@api/*": ["api/*"],
-      "@schemas/*": ["schemas/*"],
-      "@types/*": ["types/*"],
-      "@utils/*": ["utils/*"],
-      "@config/*": ["config/*"]
+      "@heya/retell.controllers": ["packages/controllers/src"],
+      "@heya/retell.controllers/*": ["packages/controllers/src/*"]
     },
     "resolveJsonModule": true,
     "esModuleInterop": true,
@@ -55,5 +50,8 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "packages"],
+  "references": [
+    { "path": "./packages/controllers" }
+  ]
 }

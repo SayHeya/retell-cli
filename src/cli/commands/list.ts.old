@@ -6,9 +6,12 @@ import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import Table from 'cli-table3';
-import { AgentController, AgentConfigLoader, MetadataManager, HashCalculator } from '@heya/retell.controllers';
-import type { WorkspaceType } from '@heya/retell.controllers';
-import { handleError } from '../errors/cli-error-handler';
+import type { WorkspaceType } from '../../types/agent.types';
+import { AgentConfigLoader } from '../../core/agent-config-loader';
+import { MetadataManager } from '../../core/metadata-manager';
+import { HashCalculator } from '../../core/hash-calculator';
+import { RetellClient } from '../../api/retell-client';
+import { WorkspaceConfigLoader } from '../../config/workspace-config';
 
 export const listCommand = new Command('list')
   .description('List agents from workspace or local')
@@ -22,7 +25,8 @@ export const listCommand = new Command('list')
     try {
       await executeList(options);
     } catch (error) {
-      handleError(error);
+      console.error('List failed:', error instanceof Error ? error.message : error);
+      process.exit(1);
     }
   });
 
@@ -201,19 +205,35 @@ function formatSyncStatus(status: SyncStatus): string {
 }
 
 /**
- * List agents from a Retell workspace using controller
+ * List agents from a Retell workspace
  */
 async function listWorkspaceAgents(workspace: WorkspaceType): Promise<void> {
   console.log(`\nListing agents from ${workspace} workspace...\n`);
 
-  const controller = new AgentController();
-  const result = await controller.list({ workspace });
+  // Load workspace config
+  const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(workspace);
+  if (!workspaceConfigResult.success) {
+    throw workspaceConfigResult.error;
+  }
+  const workspaceConfig = workspaceConfigResult.value;
+  const client = new RetellClient(workspaceConfig);
 
-  if (!result.success) {
-    throw result.error;
+  // Fetch agents from Retell
+  const listResult = await client.listAgents();
+  if (!listResult.success) {
+    throw new Error(`Failed to list agents: ${listResult.error.message}`);
   }
 
-  const agents = result.value;
+  const agents = listResult.value as Array<{
+    agent_id: string;
+    agent_name?: string;
+    voice_id: string;
+    language?: string;
+    response_engine?: {
+      type: string;
+      llm_id?: string;
+    };
+  }>;
 
   if (agents.length === 0) {
     console.log(`No agents found in ${workspace} workspace`);
@@ -222,16 +242,17 @@ async function listWorkspaceAgents(workspace: WorkspaceType): Promise<void> {
 
   // Display table
   const table = new Table({
-    head: ['Agent ID', 'Name', 'Voice', 'LLM ID'],
-    colWidths: [35, 30, 20, 35],
+    head: ['Agent ID', 'Name', 'Voice', 'Language', 'LLM ID'],
+    colWidths: [35, 30, 20, 12, 35],
   });
 
   for (const agent of agents) {
     table.push([
-      agent.agentId,
-      agent.agentName || '(unnamed)',
-      '−', // Voice not returned in list
-      agent.llmId || '(none)',
+      agent.agent_id,
+      agent.agent_name || '(unnamed)',
+      agent.voice_id,
+      agent.language || '(default)',
+      agent.response_engine?.llm_id || '(none)',
     ]);
   }
 

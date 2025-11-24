@@ -11,14 +11,17 @@
 
 import { Command } from 'commander';
 import * as path from 'path';
-import type { WorkspaceType } from '../../types/agent.types';
-import { AgentConfigLoader } from '../../core/agent-config-loader';
-import { MetadataManager } from '../../core/metadata-manager';
-import { RetellClient } from '../../api/retell-client';
-import { WorkspaceConfigLoader } from '../../config/workspace-config';
-import { ConflictDetector } from '../../core/conflict-detector';
-import { ConflictResolver } from '../../core/conflict-resolver';
-import type { ResolutionStrategy } from '../../core/conflict-resolver';
+import type { WorkspaceType } from '@heya/retell.controllers';
+import {
+  AgentConfigLoader,
+  MetadataManager,
+  WorkspaceConfigService,
+  RetellClientService,
+  ConflictDetector,
+  ConflictResolver,
+} from '@heya/retell.controllers';
+import type { ResolutionStrategy } from '@heya/retell.controllers';
+import { handleError } from '../errors/cli-error-handler';
 
 export const diffCommand = new Command('diff')
   .description('Show differences between local and remote agent configurations')
@@ -36,8 +39,7 @@ export const diffCommand = new Command('diff')
     try {
       await executeDiff(agentName, options);
     } catch (error) {
-      console.error('Diff failed:', error instanceof Error ? error.message : error);
-      process.exit(1);
+      handleError(error);
     }
   });
 
@@ -56,12 +58,12 @@ async function executeDiff(agentName: string, options: DiffOptions): Promise<voi
   const promptsPath = path.resolve(options.prompts);
 
   // 1. Load workspace config
-  const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(options.workspace);
+  const workspaceConfigResult = await WorkspaceConfigService.getWorkspace(options.workspace);
   if (!workspaceConfigResult.success) {
     throw workspaceConfigResult.error;
   }
   const workspaceConfig = workspaceConfigResult.value;
-  const client = new RetellClient(workspaceConfig);
+  const client = new RetellClientService(workspaceConfig);
 
   // 2. Load local agent config
   console.log('Loading local configuration...');

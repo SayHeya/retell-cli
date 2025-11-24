@@ -5,7 +5,8 @@
 import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { AgentConfig } from '../../types/agent.types';
+import type { AgentConfig } from '@heya/retell.controllers';
+import { handleError } from '../errors/cli-error-handler';
 
 // Dynamic import for inquirer (ESM module)
 type InquirerModule = Awaited<typeof import('inquirer')>['default'];
@@ -28,8 +29,7 @@ export const initCommand = new Command('init')
     try {
       await executeInit(agentName, options);
     } catch (error) {
-      console.error('Init failed:', error instanceof Error ? error.message : error);
-      process.exit(1);
+      handleError(error);
     }
   });
 

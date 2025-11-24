@@ -16,69 +16,77 @@ This document outlines the technical implementation details for the Retell CLI, 
 - **API Client**: retell-sdk (official Retell SDK)
 - **Validation**: Zod for runtime schema validation
 
+## Architecture Overview
+
+The project uses a **monorepo structure** with npm workspaces to separate the reusable core functionality from the CLI interface:
+
+```
+retell-dev/
+├── packages/
+│   └── module/                    # @retell/module - reusable controllers
+│       ├── src/
+│       │   ├── controllers/       # Business logic orchestration
+│       │   ├── services/          # External service integrations
+│       │   ├── core/              # Core business logic modules
+│       │   ├── types/             # TypeScript type definitions
+│       │   ├── schemas/           # Zod validation schemas
+│       │   ├── errors/            # Structured error types
+│       │   └── index.ts           # Package exports
+│       └── package.json
+└── src/                           # CLI package (thin wrappers)
+```
+
+This architecture enables:
+- **Reusability**: Controllers can be used by both CLI and API
+- **Testability**: Business logic can be tested without CLI
+- **Separation of concerns**: CLI handles I/O, module handles logic
+- **Independent versioning**: Module can be published separately
+
 ## Project Structure
 
 ```
 retell-dev/
+├── packages/
+│   └── module/                # @retell/module package
+│       ├── src/
+│       │   ├── controllers/   # Business orchestration layer
+│       │   │   ├── agent.controller.ts      # push/pull/list/delete
+│       │   │   └── workspace.controller.ts  # init/list workspaces
+│       │   ├── services/      # External service wrappers
+│       │   │   ├── retell-client.service.ts # Retell API client
+│       │   │   └── workspace-config.service.ts
+│       │   ├── core/          # Core business logic
+│       │   │   ├── agent-config-loader.ts
+│       │   │   ├── agent-transformer.ts
+│       │   │   ├── hash-calculator.ts
+│       │   │   ├── metadata-manager.ts
+│       │   │   ├── prompt-builder.ts
+│       │   │   └── variable-resolver.ts
+│       │   ├── types/         # TypeScript types
+│       │   │   ├── agent.types.ts
+│       │   │   ├── common.types.ts
+│       │   │   └── workspace.types.ts
+│       │   ├── schemas/       # Zod schemas
+│       │   │   ├── agent.schema.ts
+│       │   │   ├── metadata.schema.ts
+│       │   │   └── workspace.schema.ts
+│       │   ├── errors/        # Error types
+│       │   │   ├── error-codes.ts
+│       │   │   └── retell-error.ts
+│       │   └── index.ts
+│       ├── package.json
+│       └── tsconfig.json
 ├── src/
-│   ├── commands/              # CLI command implementations
-│   │   ├── workspace.ts       # workspace add/list/remove
-│   │   ├── init.ts            # init command
-│   │   ├── status.ts          # status command
-│   │   ├── push.ts            # push command
-│   │   ├── pull.ts            # pull command
-│   │   ├── release.ts         # release command
-│   │   ├── diff.ts            # diff command
-│   │   ├── prompt.ts          # prompt management commands
-│   │   ├── kb.ts              # knowledge base commands
-│   │   └── validate.ts        # validate command
-│   ├── core/                  # Core business logic
-│   │   ├── agent/
-│   │   │   ├── AgentConfig.ts       # Agent configuration handler
-│   │   │   ├── AgentValidator.ts    # Agent schema validation
-│   │   │   └── AgentTransformer.ts  # Our protocol ↔ Retell protocol
-│   │   ├── prompt/
-│   │   │   ├── PromptBuilder.ts     # Prompt composition engine
-│   │   │   ├── PromptScanner.ts     # Variable detection & scanning
-│   │   │   ├── SectionLoader.ts     # Load prompt sections from files
-│   │   │   └── VariableResolver.ts  # Variable categorization & resolution
-│   │   ├── workspace/
-│   │   │   ├── WorkspaceManager.ts  # Workspace configuration
-│   │   │   └── WorkspaceValidator.ts
-│   │   ├── sync/
-│   │   │   ├── SyncEngine.ts        # Synchronization orchestration
-│   │   │   ├── HashCalculator.ts    # SHA-256 hash computation
-│   │   │   ├── DiffCalculator.ts    # Configuration diffing
-│   │   │   └── MetadataManager.ts   # Metadata file management
-│   │   └── kb/
-│   │       ├── KnowledgeBaseManager.ts
-│   │       └── FileUploader.ts
-│   ├── api/                   # Retell API client wrapper
-│   │   ├── RetellClient.ts    # Wrapper around retell-sdk
-│   │   ├── AgentApi.ts        # Agent operations wrapper
-│   │   ├── LlmApi.ts          # LLM operations wrapper
-│   │   └── KbApi.ts           # Knowledge base operations wrapper
-│   ├── schemas/               # Zod schemas for validation
-│   │   ├── agent.schema.ts    # Our agent.json schema
-│   │   ├── workspace.schema.ts
-│   │   ├── metadata.schema.ts
-│   │   └── retell.schema.ts   # Retell API schemas
-│   ├── types/                 # TypeScript type definitions
-│   │   ├── agent.types.ts     # Our agent configuration types
-│   │   ├── prompt.types.ts    # Prompt system types
-│   │   ├── workspace.types.ts
-│   │   ├── sync.types.ts
-│   │   └── common.types.ts
-│   ├── utils/                 # Utility functions
-│   │   ├── logger.ts          # Structured logging
-│   │   ├── fileSystem.ts      # File operations
-│   │   ├── validation.ts      # Common validators
-│   │   ├── formatting.ts      # Output formatting
-│   │   └── errors.ts          # Custom error classes
-│   ├── config/                # Configuration
-│   │   ├── constants.ts       # App constants
-│   │   └── defaults.ts        # Default values
-│   └── index.ts               # CLI entry point
+│   ├── cli/
+│   │   ├── commands/          # CLI command implementations (thin wrappers)
+│   │   │   ├── push.ts
+│   │   │   ├── pull.ts
+│   │   │   ├── list.ts
+│   │   │   └── ...
+│   │   ├── errors/            # CLI-specific error handling
+│   │   │   └── cli-error-handler.ts
+│   │   └── index.ts           # CLI entry point
+│   └── index.ts               # Package entry point
 ├── tests/
 │   ├── unit/                  # Unit tests
 │   │   ├── core/
@@ -428,60 +436,159 @@ export const MetadataSchema = z.object({
 
 ## Error Handling
 
-### Custom Error Classes
+The error handling system uses a layered approach:
+
+1. **Module Layer**: Returns structured `RetellError` objects with error codes
+2. **CLI Layer**: Maps `RetellError` to user-friendly output with hints
+3. **API Layer**: Maps `RetellError` to HTTP status codes and JSON responses
+
+### RetellError (packages/module/)
 
 ```typescript
-// src/utils/errors.ts
+// packages/module/src/errors/retell-error.ts
 
-export abstract class RetellCliError extends Error {
-  abstract readonly code: string;
+export interface RetellError {
+  code: RetellErrorCode;          // Programmatic error code
+  message: string;                 // Human-readable message
+  details?: Record<string, unknown>; // Additional context
+  cause?: Error;                   // Original error if wrapped
+}
 
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
+// Error codes for all possible errors
+export const RetellErrorCode = {
+  // Workspace errors
+  WORKSPACE_NOT_FOUND: 'WORKSPACE_NOT_FOUND',
+  WORKSPACE_CONFIG_MISSING: 'WORKSPACE_CONFIG_MISSING',
+  WORKSPACE_API_KEY_INVALID: 'WORKSPACE_API_KEY_INVALID',
+
+  // Agent errors
+  AGENT_NOT_FOUND: 'AGENT_NOT_FOUND',
+  AGENT_CONFIG_INVALID: 'AGENT_CONFIG_INVALID',
+  AGENT_NOT_SYNCED: 'AGENT_NOT_SYNCED',
+
+  // Sync errors
+  SYNC_CONFLICT: 'SYNC_CONFLICT',
+  SYNC_STAGING_REQUIRED: 'SYNC_STAGING_REQUIRED',
+
+  // API errors
+  API_ERROR: 'API_ERROR',
+  API_UNAUTHORIZED: 'API_UNAUTHORIZED',
+  API_RATE_LIMITED: 'API_RATE_LIMITED',
+
+  // ... more codes
+} as const;
+```
+
+### CLI Error Handler (src/cli/errors/)
+
+```typescript
+// src/cli/errors/cli-error-handler.ts
+
+import type { RetellError } from '@retell/module';
+
+export class CLIError extends Error {
+  readonly exitCode: number;
+  readonly hint?: string;
+
+  static fromRetellError(error: RetellError): CLIError {
+    const mapped = mapRetellErrorToCLI(error);
+    return new CLIError(mapped.message, mapped.exitCode, mapped.hint);
   }
 }
 
-export class ValidationError extends RetellCliError {
-  readonly code = 'VALIDATION_ERROR';
+function mapRetellErrorToCLI(error: RetellError) {
+  switch (error.code) {
+    case 'WORKSPACE_CONFIG_MISSING':
+      return {
+        message: error.message,
+        hint: "Run 'retell workspace init' to create workspaces.json",
+        exitCode: 1,
+      };
 
-  constructor(
-    message: string,
-    public readonly errors: ReadonlyArray<z.ZodIssue>
-  ) {
-    super(message);
+    case 'API_UNAUTHORIZED':
+      return {
+        message: `Authentication failed: ${error.message}`,
+        hint: 'Check your API key in workspaces.json',
+        exitCode: 2,
+      };
+
+    // ... more mappings
   }
 }
 
-export class ApiError extends RetellCliError {
-  readonly code = 'API_ERROR';
+export function handleRetellError(error: RetellError): never {
+  const cliError = CLIError.fromRetellError(error);
+  console.error(`\\n❌ ${cliError.message}`);
+  if (cliError.hint) {
+    console.error(`\\n   Hint: ${cliError.hint}`);
+  }
+  process.exit(cliError.exitCode);
+}
+```
 
-  constructor(
-    message: string,
-    public readonly statusCode: number,
-    public readonly response?: unknown
-  ) {
-    super(message);
+### Controller Return Types
+
+Controllers return `Result<T, RetellError>`:
+
+```typescript
+// packages/module/src/controllers/agent.controller.ts
+
+export class AgentController {
+  async push(agentName: string, options: PushOptions): Promise<Result<PushResult, RetellError>> {
+    // Load workspace config
+    const configResult = await WorkspaceConfigService.getWorkspace(options.workspace);
+    if (!configResult.success) {
+      return configResult; // Return the RetellError
+    }
+
+    // ... business logic
+
+    // Return structured error
+    if (!stagingInSync) {
+      return Err(createError(
+        RetellErrorCode.SYNC_CONFLICT,
+        'Local changes differ from staging',
+        {
+          localHash: currentHash,
+          stagingHash: stagingMetadata.config_hash,
+          suggestion: `retell push ${agentName} -w staging`
+        }
+      ));
+    }
+
+    // Return success
+    return Ok({
+      agentId,
+      llmId,
+      configHash: finalHash,
+      syncedAt: timestamp,
+      created: true,
+    });
   }
 }
+```
 
-export class SyncError extends RetellCliError {
-  readonly code = 'SYNC_ERROR';
-}
+### CLI Command Usage
 
-export class PromptBuildError extends RetellCliError {
-  readonly code = 'PROMPT_BUILD_ERROR';
-}
+```typescript
+// src/cli/commands/push.ts
 
-export class FileSystemError extends RetellCliError {
-  readonly code = 'FILE_SYSTEM_ERROR';
-}
+import { AgentController } from '@retell/module';
+import { handleRetellError } from '../errors/cli-error-handler';
 
-// Type guard
-export function isRetellCliError(error: unknown): error is RetellCliError {
-  return error instanceof RetellCliError;
-}
+export const pushCommand = new Command('push')
+  .action(async (agentName: string, options: PushOptions) => {
+    const controller = new AgentController();
+    const result = await controller.push(agentName, options);
+
+    if (!result.success) {
+      handleRetellError(result.error); // Maps to CLI output and exits
+    }
+
+    // Display success output
+    console.log(`✓ Agent pushed successfully!`);
+    console.log(`  Agent ID: ${result.value.agentId}`);
+  });
 ```
 
 ### Result Type Pattern

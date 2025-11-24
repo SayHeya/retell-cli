@@ -5,9 +5,8 @@
 import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { AgentConfigLoader } from '../../core/agent-config-loader';
-import { MetadataManager } from '../../core/metadata-manager';
-import { HashCalculator } from '../../core/hash-calculator';
+import { AgentConfigLoader, MetadataManager, HashCalculator } from '@heya/retell.controllers';
+import { handleError } from '../errors/cli-error-handler';
 
 export const statusCommand = new Command('status')
   .description('Show sync status of agents across workspaces')
@@ -17,8 +16,7 @@ export const statusCommand = new Command('status')
     try {
       await executeStatus(agentName, options);
     } catch (error) {
-      console.error('Status check failed:', error instanceof Error ? error.message : error);
-      process.exit(1);
+      handleError(error);
     }
   });
 

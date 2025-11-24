@@ -11,6 +11,9 @@
     "dist",
     "bin"
   ],
+  "workspaces": [
+    "packages/*"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -24,7 +27,8 @@
     "./templates/*": "./dist/templates/*"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && cp -r src/templates dist/",
+    "build": "npm run build:module && tsc -p tsconfig.build.json && cp -r src/templates dist/",
+    "build:module": "npm run build -w @heya/retell.controllers",
     "build:watch": "tsc -p tsconfig.build.json --watch",
     "dev": "ts-node src/index.ts",
     "type-check": "tsc --noEmit",
@@ -61,14 +65,13 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@heya/retell.controllers": "workspace:*",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.3",
     "commander": "^11.1.0",
     "dotenv": "^17.2.3",
     "inquirer": "^9.2.12",
-    "ora": "^7.0.1",
-    "retell-sdk": "^4.4.0",
-    "zod": "^3.22.4"
+    "ora": "^7.0.1"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",

@@ -6,11 +6,14 @@ import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import Table from 'cli-table3';
-import type { WorkspaceType, LlmId } from '../../types/agent.types';
-import { AgentConfigLoader } from '../../core/agent-config-loader';
-import { MetadataManager } from '../../core/metadata-manager';
-import { RetellClient } from '../../api/retell-client';
-import { WorkspaceConfigLoader } from '../../config/workspace-config';
+import type { WorkspaceType, LlmId } from '@heya/retell.controllers';
+import {
+  AgentConfigLoader,
+  MetadataManager,
+  WorkspaceConfigService,
+  RetellClientService,
+} from '@heya/retell.controllers';
+import { handleError } from '../errors/cli-error-handler';
 
 export const auditCommand = new Command('audit')
   .description('Audit agents for duplicates, orphaned resources, and sync issues')
@@ -21,8 +24,7 @@ export const auditCommand = new Command('audit')
     try {
       await executeAudit(options);
     } catch (error) {
-      console.error('Audit failed:', error instanceof Error ? error.message : error);
-      process.exit(1);
+      handleError(error);
     }
   });
 
@@ -62,12 +64,12 @@ async function executeAudit(options: AuditOptions): Promise<void> {
   console.log(`\nAuditing agents against ${workspace} workspace...\n`);
 
   // Load workspace config
-  const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(workspace);
+  const workspaceConfigResult = await WorkspaceConfigService.getWorkspace(workspace);
   if (!workspaceConfigResult.success) {
     throw workspaceConfigResult.error;
   }
   const workspaceConfig = workspaceConfigResult.value;
-  const client = new RetellClient(workspaceConfig);
+  const client = new RetellClientService(workspaceConfig);
 
   // Gather local agents data
   const localAgents = await gatherLocalAgents(agentsPath, workspace);
@@ -156,7 +158,7 @@ async function gatherLocalAgents(
 /**
  * Fetch all agents from workspace
  */
-async function fetchWorkspaceAgents(client: RetellClient): Promise<WorkspaceAgent[]> {
+async function fetchWorkspaceAgents(client: RetellClientService): Promise<WorkspaceAgent[]> {
   const listResult = await client.listAgents();
   if (!listResult.success) {
     throw new Error(`Failed to list agents: ${listResult.error.message}`);
@@ -180,7 +182,7 @@ async function fetchWorkspaceAgents(client: RetellClient): Promise<WorkspaceAgen
 /**
  * Fetch all LLMs from workspace
  */
-async function fetchWorkspaceLlms(client: RetellClient): Promise<string[]> {
+async function fetchWorkspaceLlms(client: RetellClientService): Promise<string[]> {
   const listResult = await client.listLlms();
   if (!listResult.success) {
     throw new Error(`Failed to list LLMs: ${listResult.error.message}`);
@@ -350,7 +352,7 @@ function displayResults(results: AuditResults, workspace: WorkspaceType): void {
 /**
  * Delete orphaned LLMs
  */
-async function fixOrphanedLlms(client: RetellClient, llmIds: string[]): Promise<void> {
+async function fixOrphanedLlms(client: RetellClientService, llmIds: string[]): Promise<void> {
   console.log(`\nDeleting ${llmIds.length} orphaned LLM(s)...\n`);
 
   for (const llmId of llmIds) {

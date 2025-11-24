@@ -444,28 +444,164 @@ Templates are JSON files in the `templates/` directory. Example `basic.json`:
 }
 ```
 
+## GitHub Setup for GitOps
+
+This section covers setting up GitHub for GitOps-based configuration management with automated deployments.
+
+### 1. Initialize Workflows
+
+Export the GitHub workflow templates to your project:
+
+```bash
+retell workflows init
+```
+
+This creates:
+- `.github/workflows/retell-validate.yml` - PR validation and conflict checking
+- `.github/workflows/retell-deploy-staging.yml` - Deploy to staging on merge
+- `.github/workflows/retell-deploy-production.yml` - Deploy to production on merge
+- `.github/workflows/retell-drift-detection.yml` - Scheduled drift detection
+
+### 2. Create Branches
+
+Create the `staging` and `production` branches:
+
+```bash
+# Create and push staging branch
+git checkout -b staging
+git push -u origin staging
+
+# Create and push production branch
+git checkout -b production
+git push -u origin production
+
+# Return to main for development
+git checkout main
+```
+
+### 3. Add GitHub Secrets
+
+Add your Retell API keys as repository secrets:
+
+**Via GitHub CLI:**
+```bash
+gh secret set RETELL_STAGING_API_KEY --body "your_staging_key"
+gh secret set RETELL_PRODUCTION_API_KEY --body "your_production_key"
+```
+
+**Via GitHub UI:**
+1. Go to repository **Settings → Secrets and variables → Actions**
+2. Click **New repository secret**
+3. Add `RETELL_STAGING_API_KEY` with your staging API key
+4. Add `RETELL_PRODUCTION_API_KEY` with your production API key
+
+### 4. Set Up Branch Protection (Public Repos)
+
+Branch protection requires GitHub Pro or a public repository.
+
+**Via GitHub CLI:**
+```bash
+# Protect staging branch
+gh api repos/OWNER/REPO/branches/staging/protection -X PUT \
+  -f required_status_checks='{"strict":true,"contexts":["Validate & Check Conflicts"]}' \
+  -f enforce_admins=false \
+  -f required_pull_request_reviews='{"required_approving_review_count":1}' \
+  -f restrictions=null
+
+# Protect production branch (stricter)
+gh api repos/OWNER/REPO/branches/production/protection -X PUT \
+  -f required_status_checks='{"strict":true,"contexts":["Validate & Check Conflicts"]}' \
+  -f enforce_admins=false \
+  -f required_pull_request_reviews='{"required_approving_review_count":2}' \
+  -f restrictions=null
+```
+
+**Via GitHub UI:**
+1. Go to repository **Settings → Branches**
+2. Click **Add branch protection rule**
+3. For `staging` branch:
+   - ✅ Require a pull request before merging
+   - ✅ Require status checks to pass before merging
+     - Select: `Validate & Check Conflicts`
+   - ✅ Require branches to be up to date before merging
+4. For `production` branch:
+   - Same as staging, plus:
+   - ✅ Require approvals (recommend 2+)
+
+### 5. Create GitHub Environments (Optional)
+
+For additional deployment protection:
+
+1. Go to repository **Settings → Environments**
+2. Create `staging` environment (no required reviewers)
+3. Create `production` environment:
+   - Add required reviewers
+   - Optionally add wait timer
+
+### GitOps Workflow
+
+Once set up, the workflow operates as follows:
+
+```
+feature branch → PR to staging → merge → deploys to staging
+                                    ↓
+                        PR to production → merge → deploys to production
+```
+
+**Key features:**
+- PRs are blocked if conflicts exist with target workspace
+- Only changed agents are deployed (not all agents)
+- Drift detection runs every 6 hours to catch console changes
+
+See [WORKFLOWS_COMMAND.md](./docs/WORKFLOWS_COMMAND.md) and [GITOPS_METHODOLOGY.md](./docs/GITOPS_METHODOLOGY.md) for detailed documentation.
+
 ## Project Structure
+
+This project uses a monorepo architecture with npm workspaces.
 
 ```
 retell-dev/
+├── packages/
+│   └── controllers/          # @heya/retell.controllers package
+│       ├── src/
+│       │   ├── controllers/  # Business logic orchestration
+│       │   ├── services/     # External service integrations
+│       │   ├── core/         # Core business logic modules
+│       │   ├── errors/       # Error types and codes
+│       │   ├── schemas/      # Zod validation schemas
+│       │   └── types/        # TypeScript type definitions
+│       └── package.json
 ├── src/
-│   ├── cli/              # CLI commands
-│   │   └── commands/     # Individual command implementations
-│   ├── core/             # Core business logic
-│   ├── api/              # Retell API client
-│   ├── config/           # Configuration management
-│   ├── schemas/          # Zod validation schemas
-│   └── types/            # TypeScript type definitions
+│   └── cli/                  # CLI application
+│       ├── commands/         # Command implementations (thin wrappers)
+│       └── errors/           # CLI-specific error handling
 ├── tests/
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   ├── e2e/              # End-to-end tests
-│   └── fixtures/         # Test fixtures and templates
-├── scripts/              # Utility scripts
-├── docs/                 # Documentation
-├── .env                  # Environment variables (gitignored)
-└── workspaces.json       # Workspace configuration (gitignored)
+│   ├── unit/                 # Unit tests
+│   ├── integration/          # Integration tests
+│   ├── e2e/                  # End-to-end tests
+│   └── fixtures/             # Test fixtures and templates
+├── scripts/                  # Utility scripts
+├── docs/                     # Documentation
+├── .env                      # Environment variables (gitignored)
+└── workspaces.json           # Workspace configuration (gitignored)
 ```
+
+### Architecture Overview
+
+The project follows a layered architecture:
+
+- **`@heya/retell.controllers`**: Reusable npm package containing:
+  - **Controllers** (`AgentController`, `WorkspaceController`): Orchestrate business operations
+  - **Services** (`RetellClientService`, `WorkspaceConfigService`): Wrap external integrations
+  - **Core modules**: Handle business logic (hash calculation, metadata management, etc.)
+  - **Error system**: Structured `RetellError` with error codes
+
+- **CLI Application**: Thin command wrappers that:
+  - Parse command-line arguments
+  - Call controllers from `@heya/retell.controllers`
+  - Map errors to user-friendly output with hints
+
+This separation allows the controllers to be reused by other applications (e.g., an API server) while maintaining CLI-specific concerns in the CLI layer.
 
 ## Configuration
 

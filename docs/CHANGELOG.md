@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Monorepo Architecture with @retell/module Package
+- **Package Extraction**: Core functionality extracted into `packages/module/` npm package
+  - Enables reuse by CLI, API, and other tools
+  - Controllers orchestrate business operations (AgentController, WorkspaceController)
+  - Services wrap external integrations (RetellClientService, WorkspaceConfigService)
+  - Core modules handle business logic (HashCalculator, MetadataManager, etc.)
+
+- **Structured Error Handling**: New `RetellError` system with error codes
+  - 40+ error codes covering workspace, agent, sync, API, validation, and file operations
+  - CLI maps errors to user-friendly messages with hints
+  - API can map errors to HTTP status codes
+  - Error details include contextual information and suggestions
+
+- **Controller Layer**: Business logic orchestration
+  - `AgentController`: push, list, delete operations
+  - `WorkspaceController`: init, list, exists operations
+  - All methods return `Result<T, RetellError>` for consistent error handling
+
+- **CLI Error Handler**: Maps module errors to CLI output
+  - User-friendly error messages with emojis
+  - Contextual hints for resolution
+  - Appropriate exit codes
+
+### Changed
+
+- **Project Structure**: Now uses npm workspaces monorepo pattern
+  - `packages/module/` contains reusable core functionality
+  - `src/cli/` contains CLI-specific code (thin wrappers)
+  - Dependencies managed through workspace protocol
+
+- **Import Paths**: Core types and modules now imported from `@retell/module`
+  - `import { AgentController, WorkspaceType } from '@retell/module'`
+
+- **Build Process**: Module must be built before CLI
+  - `npm run build` now builds module first, then CLI
+
 #### Production Push Protection
 - **Staging-First Workflow**: Enforced staging deployment before production
   - Cannot push to production unless agent exists in staging

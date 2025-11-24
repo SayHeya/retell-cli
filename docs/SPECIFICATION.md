@@ -105,6 +105,85 @@ This build process ensures:
 9. **Atomic operations** - Agent config and knowledge base can be synced independently
 10. **Sync state visibility** - Always show sync status: which workspace is ahead/behind/in-sync
 
+## Package Architecture
+
+The project is structured as a **monorepo** with npm workspaces:
+
+```
+retell-dev/
+├── packages/
+│   └── module/           # @retell/module - reusable core functionality
+└── src/                  # CLI package - thin command wrappers
+```
+
+### @retell/module Package
+
+The `@retell/module` package contains all reusable business logic:
+
+- **Controllers**: Orchestrate business operations (AgentController, WorkspaceController)
+- **Services**: External integrations (RetellClientService, WorkspaceConfigService)
+- **Core**: Business logic modules (HashCalculator, MetadataManager, AgentTransformer)
+- **Types**: TypeScript type definitions
+- **Schemas**: Zod validation schemas
+- **Errors**: Structured error types with error codes
+
+This architecture enables:
+- **Reusability**: Controllers can be used by CLI, API, or other tools
+- **Testability**: Business logic can be tested without CLI dependencies
+- **Type safety**: Consistent types across all consumers
+
+### Using the Module
+
+```typescript
+import { AgentController, WorkspaceController } from '@retell/module';
+
+// Push an agent
+const controller = new AgentController();
+const result = await controller.push('my-agent', {
+  workspace: 'staging',
+  force: false,
+});
+
+if (!result.success) {
+  console.error(result.error.message);
+  // result.error.code contains the error code
+  // result.error.details contains additional context
+}
+```
+
+### Error Handling Architecture
+
+The module returns structured `RetellError` objects that consumers map to their own format:
+
+```typescript
+// Module returns structured errors
+interface RetellError {
+  code: string;        // e.g., 'WORKSPACE_NOT_FOUND'
+  message: string;     // Human-readable message
+  details?: object;    // Additional context
+}
+
+// CLI maps to user-friendly output
+if (error.code === 'WORKSPACE_CONFIG_MISSING') {
+  console.error(`❌ ${error.message}`);
+  console.error(`Hint: Run 'retell workspace init' to create workspaces.json`);
+  process.exit(1);
+}
+
+// API maps to HTTP responses
+if (error.code === 'API_UNAUTHORIZED') {
+  return res.status(401).json({ error: error.message });
+}
+```
+
+Error codes cover all domains:
+- **Workspace**: `WORKSPACE_NOT_FOUND`, `WORKSPACE_CONFIG_MISSING`, `WORKSPACE_API_KEY_INVALID`
+- **Agent**: `AGENT_NOT_FOUND`, `AGENT_CONFIG_INVALID`, `AGENT_NOT_SYNCED`
+- **Sync**: `SYNC_CONFLICT`, `SYNC_STAGING_REQUIRED`, `SYNC_DRIFT_DETECTED`
+- **API**: `API_ERROR`, `API_UNAUTHORIZED`, `API_RATE_LIMITED`
+- **Validation**: `VALIDATION_ERROR`, `SCHEMA_VALIDATION_ERROR`
+- **File**: `FILE_NOT_FOUND`, `FILE_READ_ERROR`, `FILE_WRITE_ERROR`
+
 ## Directory Structure
 
 ```
@@ -1396,33 +1475,80 @@ retell release agents/customer-service --kb-only
 
 ## Error Handling
 
+The CLI uses a layered error handling system. The `@retell/module` package returns structured `RetellError` objects with error codes, which the CLI maps to user-friendly messages with hints.
+
+### Error Code Categories
+
+| Category | Codes | Description |
+|----------|-------|-------------|
+| Workspace | `WORKSPACE_NOT_FOUND`, `WORKSPACE_CONFIG_MISSING`, `WORKSPACE_API_KEY_INVALID` | Workspace configuration issues |
+| Agent | `AGENT_NOT_FOUND`, `AGENT_CONFIG_INVALID`, `AGENT_NOT_SYNCED` | Agent configuration and state issues |
+| Sync | `SYNC_CONFLICT`, `SYNC_STAGING_REQUIRED`, `SYNC_DRIFT_DETECTED` | Synchronization conflicts |
+| API | `API_ERROR`, `API_UNAUTHORIZED`, `API_RATE_LIMITED`, `API_NOT_FOUND` | Retell API issues |
+| Validation | `VALIDATION_ERROR`, `SCHEMA_VALIDATION_ERROR`, `PROMPT_VALIDATION_ERROR` | Configuration validation failures |
+| File | `FILE_NOT_FOUND`, `FILE_READ_ERROR`, `FILE_WRITE_ERROR` | File system issues |
+
 ### Common Errors
 
-1. **API Key Invalid**:
+1. **Workspace Configuration Missing**:
    ```
-   ❌ Error: Invalid API key for workspace 'staging'
-   Hint: Run 'retell workspace add staging <api-key>' to reconfigure
+   ❌ workspaces.json not found
+
+   Hint: Run 'retell workspace init' to create workspaces.json from your .env file
    ```
 
-2. **Agent Not Found**:
+2. **API Key Invalid**:
    ```
-   ❌ Error: Agent not found in staging workspace
-   Agent ID: agent_staging_abc123
-   Hint: The agent may have been deleted. Run 'retell push --staging' to recreate.
+   ❌ Authentication failed: Invalid API key for workspace 'staging'
+
+   Hint: Check your API key in workspaces.json or .env file
    ```
 
-3. **Merge Conflict**:
+3. **Agent Not Found**:
    ```
-   ❌ Error: Local file has uncommitted changes
-   Use --force to overwrite or commit changes first
+   ❌ Agent 'customer-service' not found or not synced with staging
+
+   Hint: Check the agent name and ensure it exists in your agents directory
    ```
 
-4. **Schema Validation Failed**:
+4. **Sync Conflict (Production Push)**:
    ```
-   ❌ Validation Error in agent.json:
-     - voice_speed must be between 0.5 and 2.0 (got: 3.0)
-     - language "en-UK" is invalid (did you mean "en-GB"?)
+   ❌ Production push blocked: Local changes differ from staging
+
+   Hint: retell push customer-service -w staging
    ```
+
+5. **Schema Validation Failed**:
+   ```
+   ❌ Validation error: Invalid agent configuration
+
+   Hint: Check your agent.json file for syntax errors or invalid values
+   ```
+
+### Programmatic Error Handling
+
+When using `@retell/module` directly:
+
+```typescript
+import { AgentController } from '@retell/module';
+
+const controller = new AgentController();
+const result = await controller.push('my-agent', { workspace: 'staging' });
+
+if (!result.success) {
+  switch (result.error.code) {
+    case 'WORKSPACE_CONFIG_MISSING':
+      // Handle missing workspace config
+      break;
+    case 'SYNC_STAGING_REQUIRED':
+      // Handle staging-first requirement
+      console.log(result.error.details?.suggestion);
+      break;
+    default:
+      console.error(result.error.message);
+  }
+}
+```
 
 ## Configuration
 
