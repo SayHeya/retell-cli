@@ -1,5 +1,5 @@
 {
-  "name": "@retell/cli",
+  "name": "@heya/retell-cli",
   "version": "1.0.0",
   "description": "CLI tool for managing Retell AI agents across workspaces",
   "main": "dist/src/index.js",

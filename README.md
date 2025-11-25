@@ -6,6 +6,72 @@
 
 A TypeScript CLI tool for managing Retell AI agents across workspaces with composable prompts and file-based configuration.
 
+## Installation
+
+### Option 1: Install from Source (Development)
+
+Clone the repository and install globally:
+
+```bash
+# Clone the repository
+git clone https://github.com/suisuss-heya/retell-dev.git
+cd retell-dev
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Install globally (creates 'retell' command)
+npm install -g .
+```
+
+After installation, verify it works:
+
+```bash
+retell --version
+retell --help
+```
+
+To uninstall:
+
+```bash
+npm uninstall -g @heya/retell-cli
+```
+
+### Option 2: Install from GitHub Release
+
+Download a pre-built release package:
+
+```bash
+# Download the latest release tarball from GitHub
+# Replace VERSION with the desired version (e.g., 1.0.0)
+curl -LO https://github.com/suisuss-heya/retell-dev/releases/download/v<VERSION>/retell-cli.tgz
+
+# Install globally from the tarball
+npm install -g retell-cli.tgz
+
+# Verify installation
+retell --version
+```
+
+Or download directly from the [Releases page](https://github.com/suisuss-heya/retell-dev/releases).
+
+### Option 3: Install from NPM (When Published)
+
+```bash
+npm install -g @heya/retell-cli
+
+# Verify installation
+retell --version
+```
+
+### Requirements
+
+- Node.js >= 18.0.0
+- npm
+
 ## Features
 
 - 🔄 **Workspace Management**: Manage staging and production environments separately

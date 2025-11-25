@@ -109,7 +109,7 @@ jobs:
 
             ### NPM Package
             ```bash
-            npm install -g @retell/cli@${{ steps.version.outputs.VERSION }}
+            npm install -g @heya/retell-cli@${{ steps.version.outputs.VERSION }}
             ```
 
             ### Download Package
