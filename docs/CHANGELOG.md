@@ -243,5 +243,5 @@ If you need to rollback to pre-1.0.0 behavior, checkout the previous commit befo
 ## Support
 
 For issues, questions, or contributions:
-- GitHub Issues: [Create an issue](https://github.com/your-org/retell-dev/issues)
+- GitHub Issues: [Create an issue](https://github.com/SayHeya/retell-dev/issues)
 - Documentation: See `README.md` and `docs/` directory

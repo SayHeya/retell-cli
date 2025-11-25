@@ -1,3 +1,0 @@
-Before ending the conversation, ask: "Is there anything else I can help you with today?"
-
-Thank the customer for contacting {{company_name}} and wish them a great day.

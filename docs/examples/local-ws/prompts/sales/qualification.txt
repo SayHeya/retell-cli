@@ -1,6 +1,0 @@
-Qualify the lead by asking:
-1. What problem are they trying to solve?
-2. What is their timeline for making a decision?
-3. What is their budget range?
-
-Record responses for {{lead_name}} in the system.

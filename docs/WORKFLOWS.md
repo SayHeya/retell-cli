@@ -1,48 +1,67 @@
-# GitHub Workflows Reference
+# GitOps Workflows
 
-## Overview
+This document covers the GitOps methodology, GitHub Actions workflows, and the `retell workflows` command for managing Retell AI agents through version control.
 
-The Retell CLI provides GitHub Actions workflows that implement a complete GitOps pipeline for managing Retell AI agent configurations. These workflows automate validation, deployment, release creation, and branch synchronization.
+## GitOps Methodology
 
-For the underlying GitOps methodology, see [GITOPS_METHODOLOGY.md](GITOPS_METHODOLOGY.md).
-For CLI command details, see [WORKFLOWS_COMMAND.md](WORKFLOWS_COMMAND.md).
+### Overview
 
-## Workflow Architecture
+The Retell CLI implements a GitOps workflow where:
+- Git is the single source of truth for agent configurations
+- All changes flow through Git (branches, PRs, merges)
+- Deployments are automated via GitHub Actions
+- Staging is always deployed before production
+
+### Branch Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      GitHub Repository                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   development branch                                            │
-│        │                                                        │
-│        ▼ (PR)                                                   │
-│   ┌─────────────┐                                               │
-│   │  Validate   │ ◄── retell-validate.yml                       │
-│   └─────────────┘                                               │
-│        │                                                        │
-│        ▼ (merge)                                                │
-│   staging branch ──► retell-deploy-staging.yml                  │
-│        │                   │                                    │
-│        │                   ▼                                    │
-│        │            [Staging Workspace]                         │
-│        │                                                        │
-│        ▼ (PR)                                                   │
-│   ┌─────────────┐                                               │
-│   │  Validate   │ ◄── retell-validate.yml                       │
-│   └─────────────┘                                               │
-│        │                                                        │
-│        ▼ (merge)                                                │
-│   production branch ──► retell-deploy-production.yml            │
-│                               │                                 │
-│                               ├──► [Production Workspace]       │
-│                               ├──► [Create Release]             │
-│                               └──► [Sync Branches]              │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+development (default branch)
+  └── staging
+       └── production
 ```
 
-## Workflows Summary
+- **development**: Active development branch
+- **staging**: Staging environment deployments
+- **production**: Production environment deployments
+
+### Workflow
+
+```
+1. Create feature branch from development
+2. Make changes to agent configs
+3. Open PR to staging → Validation runs
+4. Merge to staging → Deploys to staging workspace
+5. Test in staging environment
+6. Open PR from staging to production → Validation runs
+7. Merge to production → Deploys to production + creates release
+```
+
+## GitHub Actions Workflows
+
+### Setup Command
+
+Generate GitHub Actions workflow files:
+
+```bash
+retell workflows init
+```
+
+This creates:
+- `.github/workflows/retell-validate.yml`
+- `.github/workflows/retell-deploy-staging.yml`
+- `.github/workflows/retell-deploy-production.yml`
+- `.github/workflows/retell-drift-detection.yml`
+
+### Required Secrets
+
+Configure these in your GitHub repository:
+
+| Secret | Description |
+|--------|-------------|
+| `RETELL_STAGING_API_KEY` | API key for staging workspace |
+| `RETELL_PRODUCTION_API_KEY` | API key for production workspace |
+
+### Workflow Summary
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
@@ -51,13 +70,9 @@ For CLI command details, see [WORKFLOWS_COMMAND.md](WORKFLOWS_COMMAND.md).
 | `retell-deploy-production.yml` | Push to production | Deploy, create release, sync branches |
 | `retell-drift-detection.yml` | Scheduled (6h) | Detect console modifications |
 
-## Workflow Details
-
-### 1. Validation Workflow (`retell-validate.yml`)
+### Validation Workflow
 
 **Trigger:** Pull requests to `staging` or `production` branches
-
-**Purpose:** Ensures configurations are valid and no conflicts exist with target workspace
 
 **Process:**
 1. Detects which agents changed in the PR
@@ -65,11 +80,7 @@ For CLI command details, see [WORKFLOWS_COMMAND.md](WORKFLOWS_COMMAND.md).
 3. Checks for conflicts with target workspace using `retell diff`
 4. Posts PR comment with results
 
-**Outcomes:**
-- **No conflicts:** Posts success comment listing agents to be deployed
-- **Conflicts found:** Posts detailed conflict report with resolution instructions, blocks merge
-
-**Example PR Comment (Success):**
+**Example Success Comment:**
 ```markdown
 ## ✅ Validation Passed
 
@@ -82,40 +93,28 @@ Ready to deploy to **staging** workspace.
 Merge this PR to trigger deployment.
 ```
 
-**Example PR Comment (Conflicts):**
+**Example Conflict Comment:**
 ```markdown
 ## ⚠️ Conflicts Detected with staging Workspace
-
-The following agents have configurations on Retell that differ from this PR.
 
 ### Resolution Required
 
 1. **Keep your changes** (overwrite remote):
-   ```bash
    retell diff <agent> -w staging --resolve use-local
-   ```
 
 2. **Accept remote changes** (update your PR):
-   ```bash
    retell diff <agent> -w staging --resolve use-remote
-   ```
 ```
 
-### 2. Staging Deployment Workflow (`retell-deploy-staging.yml`)
+### Staging Deployment Workflow
 
-**Trigger:** Push to `staging` branch (typically via merged PR)
-
-**Purpose:** Deploys changed agents to the staging Retell workspace
+**Trigger:** Push to `staging` branch (via merged PR)
 
 **Process:**
-1. Detects which agents changed in the merge commit
+1. Detects changed agents in the merge commit
 2. Deploys only changed agents using `retell push <agent> -w staging`
 3. Updates metadata files with GitOps annotations
 4. Commits metadata updates back to repository
-
-**Manual Trigger Options:**
-- `agent`: Deploy specific agent only
-- `deploy_all`: Deploy all agents (ignores change detection)
 
 **Metadata Updates:**
 ```json
@@ -132,66 +131,24 @@ The following agents have configurations on Retell that differ from this PR.
 }
 ```
 
-### 3. Production Deployment Workflow (`retell-deploy-production.yml`)
+### Production Deployment Workflow
 
-**Trigger:** Push to `production` branch (typically via merged PR from staging)
-
-**Purpose:** Deploys to production, creates release, syncs branches
+**Trigger:** Push to `production` branch (via merged PR from staging)
 
 **Jobs:**
 
-#### Job 1: Validate Trigger
-- For manual dispatches, requires typing "PRODUCTION" to confirm
+1. **Validate Trigger**: Requires typing "PRODUCTION" for manual dispatches
+2. **Deploy to Production**: Deploys agents, updates metadata
+3. **Create Release**: Generates version tag `v{YYYY.MM.DD}-{run_number}`, creates zip archive
+4. **Sync Branches**: Merges production → development and production → staging
 
-#### Job 2: Deploy to Production
-1. Detects changed agents
-2. Verifies all agents have staging deployments (safety check)
-3. Deploys using `retell push <agent> -w production --force`
-4. Updates metadata with GitOps annotations
-5. Commits metadata updates
+### Drift Detection Workflow
 
-#### Job 3: Create Release (runs after deploy succeeds)
-1. Generates version tag: `v{YYYY.MM.DD}-{run_number}`
-2. Creates zip archive of `agents/` and `prompts/` directories
-3. Creates GitHub Release with the zip as downloadable asset
-
-**Release Example:**
-```
-Production Release v2025.11.24-8
-
-## Production Deployment
-
-**Deployed by:** suisuss-heya
-**Commit:** abc123def456
-**Workflow Run:** 12345678
-
-This release contains the agent configurations deployed to production.
-
-Assets:
-- agents-v2025.11.24-8.zip
-```
-
-#### Job 4: Sync Branches (runs after deploy succeeds)
-1. Merges production → development
-2. Merges production → staging
-3. All branches now point to the same commit
-
-**Why sync?** Production deployment commits metadata updates. These need to flow back to development and staging to keep branches aligned and prevent merge conflicts.
-
-### 4. Drift Detection Workflow (`retell-drift-detection.yml`)
-
-**Trigger:**
-- Scheduled: Every 6 hours
-- Manual dispatch
+**Trigger:** Every 6 hours (scheduled) or manual dispatch
 
 **Purpose:** Detects when someone modifies agents via Retell Console
 
-**Process:**
-1. Iterates through all agents
-2. Compares local config hash with remote workspace
-3. If drift detected, creates/updates GitHub issue
-
-**Issue Format:**
+**Creates GitHub Issue:**
 ```markdown
 ## Configuration Drift Detected
 
@@ -201,38 +158,12 @@ The following agents have been modified outside of Git:
 - customer-service-agent
 
 ### Resolution
-Pull the remote changes or overwrite with local:
-```bash
 retell diff <agent> -w <workspace> --resolve use-remote
 # or
 retell diff <agent> -w <workspace> --resolve use-local
 ```
 
-## Setup Requirements
-
-### GitHub Secrets
-
-| Secret | Description |
-|--------|-------------|
-| `RETELL_STAGING_API_KEY` | API key for staging workspace |
-| `RETELL_PRODUCTION_API_KEY` | API key for production workspace |
-
-### Branch Structure
-
-```
-development (default branch)
-  └── staging
-       └── production
-```
-
-### Required Permissions
-
-The workflows require these repository permissions:
-- `contents: write` - Commit metadata updates
-- `pull-requests: write` - Post PR comments
-- `issues: write` - Create drift detection issues
-
-### Branch Protection (Recommended)
+## Branch Protection (Recommended)
 
 **staging branch:**
 - Require pull request reviews
@@ -244,55 +175,46 @@ The workflows require these repository permissions:
 - Require status checks: "Validate & Check Conflicts"
 - Require branches to be up to date
 
-## Flow Examples
+## Conflict Resolution
 
-### Deploying a New Agent
+### Using the Diff Command
+
+Compare local configuration with remote workspace:
 
 ```bash
-# 1. Create feature branch
-git checkout -b feature/add-sales-agent
+# Show differences
+retell diff <agent> -w staging
 
-# 2. Create agent
-mkdir -p agents/sales-agent
-echo '{"agent_name": "Sales Agent", ...}' > agents/sales-agent/agent.json
+# Keep local changes (overwrite remote)
+retell diff <agent> -w staging --resolve use-local
 
-# 3. Commit and push
-git add agents/sales-agent
-git commit -m "feat: add sales agent"
-git push -u origin feature/add-sales-agent
-
-# 4. Create PR to staging → validation runs
-# 5. Merge → staging deployment runs
-# 6. Create PR staging → production → validation runs
-# 7. Merge → production deployment + release + sync
+# Accept remote changes (update local)
+retell diff <agent> -w staging --resolve use-remote
 ```
 
-### Handling Conflicts
+### Common Scenarios
 
-When validation detects conflicts:
-
+**Scenario 1: PR validation shows conflicts**
 ```bash
-# Option 1: Keep your changes (overwrite Retell)
+# Option 1: Keep your changes
 retell diff sales-agent -w staging --resolve use-local
 git push
 
-# Option 2: Accept Retell changes (update your code)
+# Option 2: Accept remote changes
 retell diff sales-agent -w staging --resolve use-remote
 git add agents/sales-agent
 git commit -m "chore: pull remote changes"
 git push
 ```
 
-### Manual Production Deployment
-
-Via GitHub Actions UI:
-1. Go to Actions → "Deploy to Production"
-2. Click "Run workflow"
-3. Enter options:
-   - `agent`: (optional) specific agent name
-   - `deploy_all`: check to deploy all agents
-   - `confirm`: type "PRODUCTION"
-4. Click "Run workflow"
+**Scenario 2: Drift detected (someone edited in Retell Console)**
+```bash
+# Pull remote changes to local
+retell diff my-agent -w staging --resolve use-remote
+git add agents/my-agent
+git commit -m "chore: sync with Retell console changes"
+git push
+```
 
 ## Customization
 
@@ -316,60 +238,19 @@ on:
       ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
-### Change Release Version Format
-
-```yaml
-# In retell-deploy-production.yml
-- name: Generate version tag
-  run: |
-    # Semantic versioning based on tags
-    VERSION="v1.0.${{ github.run_number }}"
-    echo "version=$VERSION" >> $GITHUB_OUTPUT
-```
-
 ## Troubleshooting
 
 ### Validation Not Triggering
-
 1. Check branch names match exactly (`staging`, `production`)
 2. Verify PR changes files in `agents/**` or `prompts/**`
 3. Check workflow file syntax
 
 ### Deployment Fails with Permission Error
-
 1. Verify API keys are correct and not expired
 2. Check secrets are named exactly as expected
 3. Ensure environment protection rules allow the workflow
 
 ### Branch Sync Fails
-
-1. Check for merge conflicts (shouldn't happen if flow is followed)
+1. Check for merge conflicts
 2. Verify workflow has `contents: write` permission
 3. Check if branch protection blocks bot commits
-
-### Release Creation Fails
-
-1. Check if tag already exists (delete or use different format)
-2. Verify workflow has permission to create releases
-3. Check zip command succeeded (files exist)
-
-## CLI Version
-
-These workflows install the Retell CLI from source:
-
-```yaml
-- name: Install Retell CLI from source
-  run: |
-    git clone --branch v1.0.0 --depth 1 https://github.com/SayHeya/retell-dev.git /tmp/retell-cli
-    cd /tmp/retell-cli
-    npm ci && npm run build && npm link
-```
-
-To update to a newer CLI version, change the `--branch` tag.
-
-## Related Documentation
-
-- [GITOPS_METHODOLOGY.md](GITOPS_METHODOLOGY.md) - GitOps principles and architecture
-- [WORKFLOWS_COMMAND.md](WORKFLOWS_COMMAND.md) - `retell workflows` CLI command
-- [CONFLICT_RESOLUTION.md](CONFLICT_RESOLUTION.md) - Handling drift and conflicts
-- [DIFF_COMMAND.md](DIFF_COMMAND.md) - Diff command reference

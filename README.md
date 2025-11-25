@@ -471,7 +471,7 @@ retell workflows init
 # ✅ Created: .github/workflows/retell-drift-detection.yml
 ```
 
-See [WORKFLOWS_COMMAND.md](./docs/WORKFLOWS_COMMAND.md) and [GITOPS_METHODOLOGY.md](./docs/GITOPS_METHODOLOGY.md) for detailed documentation.
+See [WORKFLOWS.md](./docs/WORKFLOWS.md) for detailed documentation.
 
 **Phone Delete** - Remove number:
 ```bash
@@ -619,7 +619,7 @@ feature branch → PR to staging → merge → deploys to staging
 - Only changed agents are deployed (not all agents)
 - Drift detection runs every 6 hours to catch console changes
 
-See [WORKFLOWS_COMMAND.md](./docs/WORKFLOWS_COMMAND.md) and [GITOPS_METHODOLOGY.md](./docs/GITOPS_METHODOLOGY.md) for detailed documentation.
+See [WORKFLOWS.md](./docs/WORKFLOWS.md) for detailed documentation.
 
 ## Project Structure
 
@@ -761,29 +761,16 @@ npm run test:ci
 
 ## Documentation
 
-### Core Documentation
+- [Specification](./docs/SPECIFICATION.md) - Complete CLI command reference
 - [Technical Specification](./docs/TECHNICAL_SPECIFICATION.md) - Detailed technical documentation
-- [Specification](./docs/SPECIFICATION.md) - CLI command reference
-
-### GitOps & Workflows
-- [GitOps Methodology](./docs/GITOPS_METHODOLOGY.md) - GitOps approach for configuration management
-- [Workflows Command](./docs/WORKFLOWS_COMMAND.md) - GitHub Actions workflow setup
-- [Conflict Resolution](./docs/CONFLICT_RESOLUTION.md) - Handling drift and conflicts
-- [Diff Command](./docs/DIFF_COMMAND.md) - Configuration diff and conflict detection
-
-### Phone & Twilio
-- [Twilio Retell Workflow](./docs/TWILIO_RETELL_WORKFLOW.md) - Twilio integration guide
-- [Phone Number Directory](./docs/PHONE_NUMBER_DIRECTORY.md) - Phone number management
-- [Twilio CLI](./docs/TWILIO_CLI.md) - Twilio CLI integration
-
-### Other
-- [Agent Delete Command](./docs/AGENT_DELETE_COMMAND.md) - Agent deletion guide
+- [Workflows](./docs/WORKFLOWS.md) - GitOps methodology and GitHub Actions setup
+- [Phone Management](./docs/PHONE_MANAGEMENT.md) - Phone numbers, SIP trunks, and directory
+- [MCP Setup](./docs/MCP_SETUP.md) - Model Context Protocol integration guide
 - [Changelog](./docs/CHANGELOG.md) - Version history
-- [Scripts Documentation](./scripts/README.md) - Utility scripts documentation
 
 ## Workspace Limits
 
-Testing shows that Retell AI workspaces can handle **at least 100 agents** without issues. See [WORKSPACE_LIMIT_TEST_RESULTS.md](./WORKSPACE_LIMIT_TEST_RESULTS.md) for detailed findings.
+Testing shows that Retell AI workspaces can handle **at least 100 agents** without issues. No hard limit was encountered during testing with zero failures or rate limiting issues.
 
 ## Troubleshooting
 

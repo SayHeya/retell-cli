@@ -10,6 +10,12 @@ import { config } from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
 
+// Get version from package.json
+// Navigate from dist/src/cli/ to package.json at root
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const packageJson = require('../../../package.json') as { version: string };
+const VERSION = packageJson.version;
+
 // Try to find .env file in current directory or parent directories
 const findEnvFile = (): string | undefined => {
   let currentDir = process.cwd();
@@ -48,7 +54,7 @@ const program = new Command();
 program
   .name('retell')
   .description('CLI for managing Retell AI agents across workspaces')
-  .version('1.0.0');
+  .version(VERSION);
 
 // Create workspace command group
 const workspaceCommand = new Command('workspace').description('Manage workspace configuration');
