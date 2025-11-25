@@ -5,4 +5,4 @@
  * This file should be built and executable.
  */
 
-require('../dist/cli/index.js');
+require('../dist/src/cli/index.js');
