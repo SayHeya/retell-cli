@@ -1,6 +1,6 @@
 {
   "name": "@heya/retell-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CLI tool for managing Retell AI agents across workspaces",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -9,7 +9,11 @@
   },
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "node_modules/@heya"
+  ],
+  "bundleDependencies": [
+    "@heya/retell.controllers"
   ],
   "workspaces": [
     "packages/*"
@@ -71,7 +75,9 @@
     "commander": "^11.1.0",
     "dotenv": "^17.2.3",
     "inquirer": "^9.2.12",
-    "ora": "^7.0.1"
+    "ora": "^7.0.1",
+    "retell-sdk": "^4.4.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
