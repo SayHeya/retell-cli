@@ -49,10 +49,12 @@ async function executeWorkspaceInit(options: WorkspaceInitOptions): Promise<void
     throw result.error;
   }
 
-  console.log('Successfully created workspaces.json');
-  console.log('\nWorkspace configuration:');
-  console.log('  - staging: Development Workspace');
-  console.log('  - production: Production Workspace');
-  console.log('\nTip: Review and customize workspaces.json if needed');
+  console.log('✓ Successfully created workspaces.json\n');
+  console.log('Workspace configuration:');
+  console.log('  - staging: Uses RETELL_STAGING_API_KEY');
+  console.log('  - production: Uses RETELL_PRODUCTION_API_KEY');
+
+  console.log('\nNote: API keys are now referenced by environment variable name.');
+  console.log('      The workspaces.json file can be safely committed to git.');
   console.log('');
 }

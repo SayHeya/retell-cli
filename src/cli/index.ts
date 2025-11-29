@@ -41,6 +41,7 @@ import { pullCommand } from './commands/pull';
 import { statusCommand } from './commands/status';
 import { listCommand } from './commands/list';
 import { workspaceInitCommand } from './commands/workspace-init';
+import { workspaceListCommand } from './commands/workspace-list';
 import { bulkCreateCommand } from './commands/bulk-create';
 import { updateCommand } from './commands/update';
 import { deleteCommand } from './commands/delete';
@@ -48,6 +49,8 @@ import { diffCommand } from './commands/diff';
 import { phoneCommand } from './commands/phone';
 import { workflowsCommand } from './commands/workflows';
 import { auditCommand } from './commands/audit';
+import { syncCommand } from './commands/sync';
+import { versionCommand } from './commands/version';
 
 const program = new Command();
 
@@ -60,6 +63,7 @@ program
 const workspaceCommand = new Command('workspace').description('Manage workspace configuration');
 
 workspaceCommand.addCommand(workspaceInitCommand);
+workspaceCommand.addCommand(workspaceListCommand);
 
 // Register commands
 program.addCommand(initCommand);
@@ -75,6 +79,8 @@ program.addCommand(phoneCommand);
 program.addCommand(workspaceCommand);
 program.addCommand(workflowsCommand);
 program.addCommand(auditCommand);
+program.addCommand(syncCommand);
+program.addCommand(versionCommand);
 
 // Parse arguments
 program.parse();

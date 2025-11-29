@@ -413,15 +413,51 @@ export const AgentConfigSchema = z.object({
   ).optional()
 }).strict();
 
-export const WorkspaceConfigSchema = z.record(
-  z.string(),
-  z.object({
-    api_key: z.string().min(1),
-    workspace_id: z.string().optional(),
-    name: z.string(),
-    base_url: z.string().url()
-  }).strict()
-);
+// Orchestration mode
+export const OrchestrationModeSchema = z.enum(['single-production', 'multi-production']);
+export type OrchestrationMode = z.infer<typeof OrchestrationModeSchema>;
+
+// New format workspace config (references env var)
+export const WorkspaceConfigJsonSchema = z.object({
+  api_key_env: z.string().min(1, 'API key environment variable name is required'),
+  id: z.string().optional(),
+  name: z.string(),
+  base_url: z.string().url(),
+});
+
+// Legacy format (raw API key - deprecated)
+export const LegacyWorkspaceConfigJsonSchema = z.object({
+  api_key: z.string().min(1),
+  workspace_id: z.string().optional(),
+  name: z.string(),
+  base_url: z.string().url().optional(),
+});
+
+// Either format
+export const AnyWorkspaceConfigJsonSchema = z.union([
+  WorkspaceConfigJsonSchema,
+  LegacyWorkspaceConfigJsonSchema,
+]);
+
+// Single-production mode config
+export const SingleProductionConfigSchema = z.object({
+  mode: z.literal('single-production'),
+  staging: AnyWorkspaceConfigJsonSchema,
+  production: AnyWorkspaceConfigJsonSchema,
+});
+
+// Multi-production mode config
+export const MultiProductionConfigSchema = z.object({
+  mode: z.literal('multi-production'),
+  staging: AnyWorkspaceConfigJsonSchema,
+  production: z.array(AnyWorkspaceConfigJsonSchema).min(1),
+});
+
+// Full workspaces.json schema
+export const WorkspacesConfigSchema = z.discriminatedUnion('mode', [
+  SingleProductionConfigSchema,
+  MultiProductionConfigSchema,
+]);
 
 export const MetadataSchema = z.object({
   workspace: z.enum(['staging', 'production']),
@@ -1298,6 +1334,81 @@ node dist/index.js --help
 
 As of version 1.0.0, the CLI **requires** a `workspaces.json` file for all operations. This prevents accidental operations without explicit configuration.
 
+### Orchestration Modes
+
+The CLI supports two orchestration modes:
+
+#### Single-Production Mode (Default)
+- One staging workspace + one production workspace
+- Production workspace can have multiple agents
+- Best for: Most use cases, simple deployments
+
+#### Multi-Production Mode
+- One staging workspace + multiple production workspaces
+- Each production workspace typically has one agent
+- Best for: High-scale deployments, tenant isolation, geographic distribution
+
+### Configuration Format
+
+**New Format** (Recommended - can be committed to git):
+```json
+{
+  "mode": "single-production",
+  "staging": {
+    "api_key_env": "RETELL_STAGING_API_KEY",
+    "name": "WORKSPACE_STAGING",
+    "base_url": "https://api.retellai.com"
+  },
+  "production": {
+    "api_key_env": "RETELL_PRODUCTION_API_KEY",
+    "name": "WORKSPACE_1_PRODUCTION",
+    "base_url": "https://api.retellai.com"
+  }
+}
+```
+
+**Multi-Production Format**:
+```json
+{
+  "mode": "multi-production",
+  "staging": {
+    "api_key_env": "RETELL_STAGING_API_KEY",
+    "name": "WORKSPACE_STAGING",
+    "base_url": "https://api.retellai.com"
+  },
+  "production": [
+    {
+      "id": "ws_prod_1",
+      "api_key_env": "RETELL_PRODUCTION_1_API_KEY",
+      "name": "WORKSPACE_1_PRODUCTION",
+      "base_url": "https://api.retellai.com"
+    },
+    {
+      "id": "ws_prod_2",
+      "api_key_env": "RETELL_PRODUCTION_2_API_KEY",
+      "name": "WORKSPACE_2_PRODUCTION",
+      "base_url": "https://api.retellai.com"
+    }
+  ]
+}
+```
+
+**Legacy Format** (Deprecated - must NOT be committed):
+```json
+{
+  "staging": {
+    "api_key": "key_xxx",
+    "name": "Development Workspace",
+    "base_url": "https://api.retellai.com"
+  },
+  "production": {
+    "api_key": "key_yyy",
+    "name": "Production Workspace",
+    "base_url": "https://api.retellai.com"
+  }
+}
+```
+
 ### Configuration Flow
 
 1. **Environment Variables** (`.env`):
@@ -1308,34 +1419,23 @@ As of version 1.0.0, the CLI **requires** a `workspaces.json` file for all opera
 
 2. **Generate Configuration**:
    ```bash
-   retell workspace init
+   retell workspace init                    # Single-production mode
+   retell workspace init --mode multi-production  # Multi-production mode
    ```
 
-3. **Result** (`workspaces.json`):
-   ```json
-   {
-     "staging": {
-       "api_key": "key_xxx",
-       "name": "Development Workspace",
-       "base_url": "https://api.retellai.com"
-     },
-     "production": {
-       "api_key": "key_yyy",
-       "name": "Production Workspace",
-       "base_url": "https://api.retellai.com"
-     }
-   }
-   ```
+3. **Result** (`workspaces.json`) - uses `api_key_env` references
 
 ### Validation Rules
 
-The `WorkspaceConfigLoader` validates:
+The `WorkspaceConfigService` validates:
 
 1. **File Existence**: `workspaces.json` must exist in project root
 2. **Valid JSON**: File must be properly formatted JSON
-3. **Required Workspaces**: Both `staging` and `production` must be present
-4. **API Keys**: Both workspaces must have non-empty `api_key` fields
-5. **Base URL**: Defaults to `https://api.retellai.com` if not specified
+3. **Mode Field**: Must be `single-production` or `multi-production` (auto-detected if missing)
+4. **Required Workspaces**: Both `staging` and `production` must be present
+5. **API Keys**: Environment variables referenced by `api_key_env` must be set
+6. **Production Array**: In multi-production mode, must have at least one workspace
+7. **Base URL**: Defaults to `https://api.retellai.com` if not specified
 
 ### Error Handling
 
@@ -1343,34 +1443,51 @@ The `WorkspaceConfigLoader` validates:
 |-------|---------|----------|
 | File not found | `workspaces.json not found` | Run `retell workspace init` |
 | Missing workspace | `Missing 'staging' workspace` | Run `retell workspace init --force` |
-| Invalid API key | `Invalid or missing API key` | Check `.env` and regenerate |
+| Missing env var | `Environment variable 'X' is not set` | Set the env var in `.env` |
+| Invalid mode | `In 'multi-production' mode, 'production' must be an array` | Fix mode/production format |
 | Malformed JSON | `Invalid JSON in workspaces.json` | Regenerate with `--force` |
 
 ### Implementation
 
-**Location**: `src/config/workspace-config.ts`
+**Location**: `packages/controllers/src/services/workspace-config.service.ts`
 
 **Key Methods**:
 - `load()`: Load and validate workspaces.json (required)
-- `getWorkspace(type)`: Get specific workspace configuration
-- `generateFromEnv()`: Generate workspaces.json from environment variables
+- `getWorkspace(type, index?)`: Get specific workspace configuration
+- `getProductionWorkspaces()`: Get all production workspaces (returns array)
+- `getAllWorkspaces()`: Get all workspaces with type info
+- `getMode()`: Get current orchestration mode
+- `generateFromEnv(options)`: Generate workspaces.json from environment variables
 - `exists()`: Check if workspaces.json exists
 
 **Usage in Commands**:
 ```typescript
 // All commands must load workspace config first
-const workspaceConfigResult = await WorkspaceConfigLoader.getWorkspace(options.workspace);
+const workspaceConfigResult = await WorkspaceConfigService.getWorkspace(options.workspace);
 if (!workspaceConfigResult.success) {
   throw workspaceConfigResult.error; // Prevents operation
 }
+
+// Get all production workspaces (for multi-production mode)
+const prodResult = await WorkspaceConfigService.getProductionWorkspaces();
+if (prodResult.success) {
+  for (const prod of prodResult.value) {
+    // Process each production workspace
+  }
+}
+
+// Get mode
+const modeResult = await WorkspaceConfigService.getMode();
+// modeResult.value is 'single-production' | 'multi-production'
 ```
 
 ### Security Benefits
 
-1. **Explicit Configuration**: No silent fallbacks to environment variables
-2. **Validation Before Operations**: All API calls validated upfront
-3. **Clear Error Messages**: Users know exactly what's missing
-4. **Gitignore Protection**: Both `.env` and `workspaces.json` are gitignored
+1. **API Keys in Environment**: Actual keys stay in `.env` (gitignored)
+2. **Config is Committable**: `workspaces.json` with `api_key_env` can be committed
+3. **Validation Before Operations**: All API calls validated upfront
+4. **Clear Error Messages**: Users know exactly what's missing
+5. **CI/CD Compatible**: Environment injection works seamlessly
 
 ### Workspace Limits
 

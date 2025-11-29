@@ -229,7 +229,62 @@ project-root/
 
 ### `workspaces.json`
 
-Stores API keys and metadata for each workspace.
+Stores workspace configuration with references to API keys stored in environment variables.
+
+The CLI supports two orchestration modes:
+
+#### Single-Production Mode (Default)
+
+One staging workspace and one production workspace. The production workspace can have multiple agents deployed.
+
+```json
+{
+  "mode": "single-production",
+  "staging": {
+    "api_key_env": "RETELL_STAGING_API_KEY",
+    "name": "WORKSPACE_STAGING",
+    "base_url": "https://api.retellai.com"
+  },
+  "production": {
+    "api_key_env": "RETELL_PRODUCTION_API_KEY",
+    "name": "WORKSPACE_1_PRODUCTION",
+    "base_url": "https://api.retellai.com"
+  }
+}
+```
+
+#### Multi-Production Mode
+
+One staging workspace and multiple production workspaces. Each production workspace typically has one agent (for scaling/isolation).
+
+```json
+{
+  "mode": "multi-production",
+  "staging": {
+    "api_key_env": "RETELL_STAGING_API_KEY",
+    "name": "WORKSPACE_STAGING",
+    "base_url": "https://api.retellai.com"
+  },
+  "production": [
+    {
+      "id": "ws_prod_1",
+      "api_key_env": "RETELL_PRODUCTION_1_API_KEY",
+      "name": "WORKSPACE_1_PRODUCTION",
+      "base_url": "https://api.retellai.com"
+    },
+    {
+      "id": "ws_prod_2",
+      "api_key_env": "RETELL_PRODUCTION_2_API_KEY",
+      "name": "WORKSPACE_2_PRODUCTION",
+      "base_url": "https://api.retellai.com"
+    }
+  ]
+}
+```
+
+#### Legacy Format (Deprecated)
+
+For backwards compatibility, the legacy format with raw API keys is still supported:
 
 ```json
 {
@@ -237,18 +292,21 @@ Stores API keys and metadata for each workspace.
     "api_key": "sk_staging_...",
     "workspace_id": "workspace_dev_123",
     "name": "Development Workspace",
-    "base_url": "https://api.retellai.com/v2"
+    "base_url": "https://api.retellai.com"
   },
   "production": {
     "api_key": "sk_prod_...",
     "workspace_id": "workspace_prod_456",
     "name": "Production Workspace",
-    "base_url": "https://api.retellai.com/v2"
+    "base_url": "https://api.retellai.com"
   }
 }
 ```
 
-**Security Note**: This file should be in `.gitignore`. Use environment variables in CI/CD.
+**Security Note**: The new format using `api_key_env` is recommended because:
+- `workspaces.json` can be safely committed to git
+- API keys remain in `.env` (which stays gitignored)
+- CI/CD workflows can inject keys via environment variables
 
 ### `agents/{agent-name}/agent.json`
 
@@ -623,7 +681,50 @@ Metadata linking local config to staging workspace.
 
 ### `agents/{agent-name}/production.json`
 
-Same schema as staging.json, but for production workspace.
+Metadata for production workspace(s). Schema varies by orchestration mode.
+
+**Single-Production Mode** - Same schema as staging.json:
+
+```json
+{
+  "workspace": "production",
+  "agent_id": "agent_prod_abc123",
+  "llm_id": "llm_prod_xyz789",
+  "kb_id": "kb_prod_def456",
+  "last_sync": "2025-11-14T10:30:00Z",
+  "config_hash": "sha256:a1b2c3d4...",
+  "retell_version": 5,
+  "workspace_id": "ws_prod_1",
+  "workspace_name": "WORKSPACE_1_PRODUCTION"
+}
+```
+
+**Multi-Production Mode** - Array of metadata entries (one per workspace):
+
+```json
+[
+  {
+    "workspace": "production",
+    "agent_id": "agent_prod1_abc123",
+    "llm_id": "llm_prod1_xyz789",
+    "kb_id": null,
+    "last_sync": "2025-11-14T10:30:00Z",
+    "config_hash": "sha256:a1b2c3d4...",
+    "workspace_id": "ws_prod_1",
+    "workspace_name": "WORKSPACE_1_PRODUCTION"
+  },
+  {
+    "workspace": "production",
+    "agent_id": "agent_prod2_def456",
+    "llm_id": "llm_prod2_uvw321",
+    "kb_id": null,
+    "last_sync": "2025-11-14T11:00:00Z",
+    "config_hash": "sha256:a1b2c3d4...",
+    "workspace_id": "ws_prod_2",
+    "workspace_name": "WORKSPACE_2_PRODUCTION"
+  }
+]
+```
 
 ### `agents/{agent-name}/knowledge/.kb-meta.json`
 
@@ -692,6 +793,45 @@ retell workspace add production sk_prod_xyz789
 - `--name <display-name>`: Human-readable workspace name
 - `--base-url <url>`: Override API base URL (default: https://api.retellai.com/v2)
 
+#### `retell workspace init [options]`
+
+Generates workspaces.json from environment variables.
+
+```bash
+retell workspace init
+retell workspace init --mode multi-production
+retell workspace init --force
+```
+
+**Options**:
+- `--mode <mode>`: Orchestration mode: `single-production` (default) or `multi-production`
+- `-f, --force`: Overwrite existing workspaces.json
+
+**Behavior**:
+1. Reads API keys from environment variables:
+   - `RETELL_STAGING_API_KEY` (required)
+   - `RETELL_PRODUCTION_API_KEY` (required for single-production)
+   - `RETELL_PRODUCTION_*_API_KEY` (for multi-production mode)
+2. Creates `workspaces.json` with `api_key_env` references
+3. File can be safely committed to git (no secrets)
+
+**Output**:
+```
+Generating workspaces.json from environment variables...
+
+Mode: single-production
+
+✓ Successfully created workspaces.json
+
+Workspace configuration:
+  - Mode: single-production
+  - staging: Uses RETELL_STAGING_API_KEY
+  - production: Uses RETELL_PRODUCTION_API_KEY
+
+Note: API keys are now referenced by environment variable name.
+      The workspaces.json file can be safely committed to git.
+```
+
 #### `retell workspace list`
 
 Lists all configured workspaces.
@@ -700,11 +840,33 @@ Lists all configured workspaces.
 retell workspace list
 ```
 
-**Output**:
+**Output (single-production mode)**:
 ```
-Configured Workspaces:
-  staging      Development Workspace    workspace_dev_123
-  production   Production Workspace     workspace_prod_456
+Mode: single-production
+
+┌───────────────────────────────────┬─────────────┬───────────────────────────────┬───────────┐
+│ Name                              │ Type        │ Base URL                      │ API Key   │
+├───────────────────────────────────┼─────────────┼───────────────────────────────┼───────────┤
+│ WORKSPACE_STAGING                 │ staging     │ https://api.retellai.com      │ ✓         │
+│ WORKSPACE_1_PRODUCTION            │ production  │ https://api.retellai.com      │ ✓         │
+└───────────────────────────────────┴─────────────┴───────────────────────────────┴───────────┘
+
+Total: 2 workspace(s)
+```
+
+**Output (multi-production mode)**:
+```
+Mode: multi-production
+
+┌───────────────────────────────────┬─────────────┬───────────────────────────────┬───────────┐
+│ Name                              │ Type        │ Base URL                      │ API Key   │
+├───────────────────────────────────┼─────────────┼───────────────────────────────┼───────────┤
+│ WORKSPACE_STAGING                 │ staging     │ https://api.retellai.com      │ ✓         │
+│ WORKSPACE_1_PRODUCTION            │ production [0] │ https://api.retellai.com   │ ✓         │
+│ WORKSPACE_2_PRODUCTION            │ production [1] │ https://api.retellai.com   │ ✓         │
+└───────────────────────────────────┴─────────────┴───────────────────────────────┴───────────┘
+
+Total: 3 workspace(s)
 ```
 
 #### `retell workspace remove <name>`
@@ -1344,6 +1506,71 @@ retell kb remove agents/customer-service faq.txt staging --remote
 - `--remote`: Also delete from remote workspace (requires confirmation)
 - `--local`: Only delete local file
 
+### Sync
+
+#### `retell sync [options]`
+
+Reconciles local metadata files with actual workspace state. Queries all configured workspaces and updates `staging.json` and `production.json` to reflect what's actually deployed.
+
+```bash
+retell sync
+retell sync --agent customer-service
+retell sync --dry-run
+retell sync --path ./agents
+```
+
+**Options**:
+- `-p, --path <path>`: Path to agents directory (default: `./agents`)
+- `-a, --agent <name>`: Sync only a specific agent
+- `--dry-run`: Show what would be changed without making changes
+
+**Behavior**:
+1. Lists all configured workspaces from `workspaces.json`
+2. Queries each workspace to get deployed agents
+3. For each local agent directory:
+   - Matches by agent name
+   - If found: Updates metadata file with current agent_id, llm_id, workspace_id
+   - If not found: Removes stale metadata file (or entry in multi-production mode)
+
+**Output**:
+```
+🔄 Syncing metadata with workspaces...
+
+Mode: single-production
+Workspaces: 2
+
+Agents to sync: customer-service, sales-agent
+
+━━━ WORKSPACE_STAGING (staging) ━━━
+  Found 2 agent(s)
+  ✓ customer-service: Found (agent_staging_abc123)
+    Updated staging.json
+  ✓ sales-agent: Found (agent_staging_def456)
+    Updated staging.json
+
+━━━ WORKSPACE_1_PRODUCTION (production) ━━━
+  Found 1 agent(s)
+  ✓ customer-service: Found (agent_prod_xyz789)
+    Updated production.json
+  ○ sales-agent: Not deployed in this workspace
+
+━━━ Summary ━━━
+
+WORKSPACE_STAGING:
+  Agents in workspace: 2
+  Metadata updated: Yes
+WORKSPACE_1_PRODUCTION:
+  Agents in workspace: 1
+  Metadata updated: Yes
+```
+
+**Multi-Production Mode**:
+
+In multi-production mode, `production.json` is an array. The sync command:
+- Adds entries for workspaces where the agent is deployed
+- Removes entries for workspaces where the agent is not found
+- Preserves entries for other workspaces not being synced
+
 ### Validation
 
 #### `retell validate <path>`
@@ -1556,7 +1783,7 @@ if (!result.success) {
 
 As of v1.0.0, the CLI **requires** `workspaces.json` for all operations.
 
-**Setup Steps:**
+**Setup Steps (Single-Production Mode):**
 
 1. Create `.env` with API keys:
    ```env
@@ -1572,32 +1799,76 @@ As of v1.0.0, the CLI **requires** `workspaces.json` for all operations.
 3. Result:
    ```json
    {
+     "mode": "single-production",
      "staging": {
-       "api_key": "key_xxx",
-       "name": "Development Workspace",
+       "api_key_env": "RETELL_STAGING_API_KEY",
+       "name": "WORKSPACE_STAGING",
        "base_url": "https://api.retellai.com"
      },
      "production": {
-       "api_key": "key_yyy",
-       "name": "Production Workspace",
+       "api_key_env": "RETELL_PRODUCTION_API_KEY",
+       "name": "WORKSPACE_1_PRODUCTION",
        "base_url": "https://api.retellai.com"
      }
+   }
+   ```
+
+**Setup Steps (Multi-Production Mode):**
+
+1. Create `.env` with API keys:
+   ```env
+   RETELL_STAGING_API_KEY=key_xxx
+   RETELL_PRODUCTION_1_API_KEY=key_yyy
+   RETELL_PRODUCTION_2_API_KEY=key_zzz
+   ```
+
+2. Generate `workspaces.json`:
+   ```bash
+   retell workspace init --mode multi-production
+   ```
+
+3. Result:
+   ```json
+   {
+     "mode": "multi-production",
+     "staging": {
+       "api_key_env": "RETELL_STAGING_API_KEY",
+       "name": "WORKSPACE_STAGING",
+       "base_url": "https://api.retellai.com"
+     },
+     "production": [
+       {
+         "id": "ws_prod_1",
+         "api_key_env": "RETELL_PRODUCTION_1_API_KEY",
+         "name": "WORKSPACE_1_PRODUCTION",
+         "base_url": "https://api.retellai.com"
+       }
+     ]
    }
    ```
 
 **Validation:**
 - File existence checked before all operations
 - Both `staging` and `production` workspaces required
-- API keys must be non-empty
+- API keys referenced via `api_key_env` must be set in environment
 - Clear error messages guide users to solutions
 
 **Commands:**
 ```bash
-# Generate from .env
+# Generate from .env (single-production)
 retell workspace init
+
+# Generate multi-production mode
+retell workspace init --mode multi-production
 
 # Force regenerate
 retell workspace init --force
+
+# List configured workspaces
+retell workspace list
+
+# Sync metadata with actual workspace state
+retell sync
 ```
 
 ### Environment Variables
@@ -1629,23 +1900,32 @@ Global CLI configuration:
 
 ## Security Considerations
 
-1. **workspaces.json and .env MUST be in .gitignore**
-   - Contains API keys
+1. **API keys in .env MUST be in .gitignore**
+   - `.env` contains actual API key values
    - NEVER commit to version control
-   - Use `retell workspace init` to regenerate locally
+   - Use environment variables in CI/CD
 
-2. **Metadata files ARE version controlled**
+2. **workspaces.json CAN be committed** (new format)
+   - Uses `api_key_env` to reference environment variables
+   - Does NOT contain actual API keys
+   - Safe to commit when using the new format
+
+3. **Legacy workspaces.json MUST be in .gitignore**
+   - Old format with `api_key` contains actual keys
+   - Use `retell workspace init` to migrate to new format
+
+4. **Metadata files ARE version controlled**
    - staging.json, production.json
-   - Contains agent_id, llm_id but not secrets
+   - Contains agent_id, llm_id, workspace_id but not secrets
    - Safe to commit
 
-3. **Knowledge base files**
+5. **Knowledge base files**
    - Version controlled
    - Ensure no sensitive data in committed files
 
-4. **Workspace validation**
+6. **Workspace validation**
    - Prevents operations without explicit configuration
-   - No silent fallbacks to environment variables
+   - API key resolution from environment variables happens at runtime
    - All commands validate workspace config first
 
 ## Git Integration
@@ -1653,8 +1933,14 @@ Global CLI configuration:
 Recommended `.gitignore`:
 
 ```gitignore
-# Workspace credentials
-workspaces.json
+# Environment files with actual API keys
+.env
+.env.local
+.env.*.local
+
+# Legacy workspaces.json (contains raw API keys)
+# Note: New format with api_key_env CAN be committed safely
+# workspaces.json  # Uncomment only if using legacy format
 
 # Optional: CLI config if it contains secrets
 .retellrc.json
