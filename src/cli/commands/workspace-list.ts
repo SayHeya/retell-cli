@@ -38,9 +38,15 @@ async function executeWorkspaceList(): Promise<void> {
   const workspaces = result.value;
 
   // Print table header
-  console.log('┌───────────────────────────────────┬─────────────┬───────────────────────────────┬───────────┐');
-  console.log('│ Name                              │ Type        │ Base URL                      │ API Key   │');
-  console.log('├───────────────────────────────────┼─────────────┼───────────────────────────────┼───────────┤');
+  console.log(
+    '┌───────────────────────────────────┬─────────────┬───────────────────────────────┬───────────┐'
+  );
+  console.log(
+    '│ Name                              │ Type        │ Base URL                      │ API Key   │'
+  );
+  console.log(
+    '├───────────────────────────────────┼─────────────┼───────────────────────────────┼───────────┤'
+  );
 
   for (const ws of workspaces) {
     const name = ws.name.padEnd(33);
@@ -58,6 +64,8 @@ async function executeWorkspaceList(): Promise<void> {
     console.log(`│ ${name} │ ${typeDisplay} │ ${baseUrl} │ ${hasKey.padEnd(9)} │`);
   }
 
-  console.log('└───────────────────────────────────┴─────────────┴───────────────────────────────┴───────────┘');
+  console.log(
+    '└───────────────────────────────────┴─────────────┴───────────────────────────────┴───────────┘'
+  );
   console.log(`\nTotal: ${workspaces.length} workspace(s)\n`);
 }

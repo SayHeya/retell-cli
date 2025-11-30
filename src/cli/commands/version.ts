@@ -142,7 +142,9 @@ async function executeRollback(
   options: RollbackOptions
 ): Promise<void> {
   const action = options.dryRun ? 'Previewing rollback' : 'Rolling back';
-  console.log(`\n${action} '${agentName}' to version ${targetVersion} in ${options.workspace}...\n`);
+  console.log(
+    `\n${action} '${agentName}' to version ${targetVersion} in ${options.workspace}...\n`
+  );
 
   const controller = new VersionController();
   const result = await controller.rollback(agentName, {
@@ -157,13 +159,21 @@ async function executeRollback(
     throw result.error;
   }
 
-  const { agentId, llmId, previousVersion, restoredToVersion, newVersion, dryRun, responseEngineSkipped } = result.value;
+  const {
+    agentId,
+    llmId,
+    previousVersion,
+    restoredToVersion,
+    newVersion,
+    dryRun,
+    responseEngineSkipped,
+  } = result.value;
 
   if (dryRun) {
     console.log(`Dry run - no changes made.`);
     console.log(`\nWould rollback:`);
     console.log(`  Agent ID: ${agentId}`);
-    if (llmId) console.log(`  LLM ID: ${llmId}`);
+    if (llmId) {console.log(`  LLM ID: ${llmId}`);}
     console.log(`  From version: ${previousVersion}`);
     console.log(`  To version: ${restoredToVersion}`);
     if (options.publish) {
@@ -172,13 +182,13 @@ async function executeRollback(
   } else {
     console.log(`✓ Rollback completed successfully!`);
     console.log(`  Agent ID: ${agentId}`);
-    if (llmId) console.log(`  LLM ID: ${llmId}`);
+    if (llmId) {console.log(`  LLM ID: ${llmId}`);}
     console.log(`  Previous version: ${previousVersion}`);
     console.log(`  Restored to version: ${restoredToVersion}`);
     if (newVersion !== null) {
       console.log(`  New published version: ${newVersion}`);
     }
-    if (responseEngineSkipped) {
+    if (responseEngineSkipped === true) {
       console.log(`\n⚠ Note: response_engine was not restored (Retell API does not allow`);
       console.log(`  updating response_engine on published agents). The LLM configuration`);
       console.log(`  was still restored if present.`);

@@ -1,5 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
-import { WorkspaceConfigService, WorkspaceController, type RetellError } from '@heya/retell.controllers';
+import {
+  WorkspaceConfigService,
+  WorkspaceController,
+  type RetellError,
+} from '@heya/retell.controllers';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -51,7 +55,7 @@ describe('WorkspaceConfigService', () => {
       const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(true);
-      if (!result.success) return;
+      if (!result.success) {return;}
       expect(result.value.staging.apiKey).toBe('staging_key_123');
       expect(result.value.mode).toBe('single-production');
       if (result.value.mode === 'single-production') {

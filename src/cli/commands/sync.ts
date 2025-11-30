@@ -115,7 +115,10 @@ async function executeSync(options: SyncOptions): Promise<void> {
         agents: agents.map((a) => ({
           agent_id: a.agent_id,
           agent_name: a.agent_name || 'Unknown',
-          llm_id: a.response_engine && 'llm_id' in a.response_engine ? a.response_engine.llm_id : undefined,
+          llm_id:
+            a.response_engine !== null && a.response_engine !== undefined && 'llm_id' in a.response_engine
+              ? a.response_engine.llm_id
+              : undefined,
         })),
       };
 
@@ -158,7 +161,10 @@ async function executeSync(options: SyncOptions): Promise<void> {
           const entry: AgentMetadata = {
             workspace: ws.type,
             agent_id: matchingAgent.agent_id,
-            llm_id: matchingAgent.response_engine && 'llm_id' in matchingAgent.response_engine ? matchingAgent.response_engine.llm_id : '',
+            llm_id:
+              matchingAgent.response_engine !== null && matchingAgent.response_engine !== undefined && 'llm_id' in matchingAgent.response_engine
+                ? matchingAgent.response_engine.llm_id
+                : '',
             kb_id: null,
             last_sync: new Date().toISOString(),
             config_hash: '', // Would need to recalculate

@@ -316,10 +316,7 @@ describe('Sync Command Dependencies', () => {
         (e: { workspace_id?: string }) => e.workspace_id !== 'ws_prod_1'
       );
 
-      await fs.writeFile(
-        path.join(agentDir, 'production.json'),
-        JSON.stringify(filtered, null, 2)
-      );
+      await fs.writeFile(path.join(agentDir, 'production.json'), JSON.stringify(filtered, null, 2));
 
       // Verify removal
       const updated = JSON.parse(
@@ -498,9 +495,7 @@ describe('Sync Command Dependencies', () => {
       }
 
       // Verify file wasn't changed
-      const content = JSON.parse(
-        await fs.readFile(path.join(agentDir, 'staging.json'), 'utf-8')
-      );
+      const content = JSON.parse(await fs.readFile(path.join(agentDir, 'staging.json'), 'utf-8'));
       expect(content.agent_id).toBe('original_id');
     });
   });
