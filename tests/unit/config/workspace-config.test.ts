@@ -32,6 +32,138 @@ describe('WorkspaceConfigService', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
+  describe('API key resolution (api_key vs api_key_env)', () => {
+    it('should load api_key directly when provided', async () => {
+      const workspacesConfig = {
+        staging: {
+          api_key: 'direct_staging_key',
+          name: 'Staging',
+        },
+        production: {
+          api_key: 'direct_prod_key',
+          name: 'Production',
+        },
+      };
+
+      await fs.writeFile(
+        path.join(tempDir, 'workspaces.json'),
+        JSON.stringify(workspacesConfig, null, 2)
+      );
+
+      const result = await WorkspaceConfigService.load();
+
+      expect(result.success).toBe(true);
+      if (result.success && result.value.mode === 'single-production') {
+        expect(result.value.staging.apiKey).toBe('direct_staging_key');
+        expect(result.value.production.apiKey).toBe('direct_prod_key');
+      }
+    });
+
+    it('should resolve api_key_env from environment variable', async () => {
+      process.env['MY_STAGING_KEY'] = 'env_staging_key';
+      process.env['MY_PROD_KEY'] = 'env_prod_key';
+
+      const workspacesConfig = {
+        staging: {
+          api_key_env: 'MY_STAGING_KEY',
+          name: 'Staging',
+        },
+        production: {
+          api_key_env: 'MY_PROD_KEY',
+          name: 'Production',
+        },
+      };
+
+      await fs.writeFile(
+        path.join(tempDir, 'workspaces.json'),
+        JSON.stringify(workspacesConfig, null, 2)
+      );
+
+      const result = await WorkspaceConfigService.load();
+
+      expect(result.success).toBe(true);
+      if (result.success && result.value.mode === 'single-production') {
+        expect(result.value.staging.apiKey).toBe('env_staging_key');
+        expect(result.value.production.apiKey).toBe('env_prod_key');
+      }
+    });
+
+    it('should prefer api_key over api_key_env when only api_key is provided', async () => {
+      const workspacesConfig = {
+        staging: {
+          api_key: 'direct_key',
+          name: 'Staging',
+        },
+        production: {
+          api_key: 'direct_prod_key',
+          name: 'Production',
+        },
+      };
+
+      await fs.writeFile(
+        path.join(tempDir, 'workspaces.json'),
+        JSON.stringify(workspacesConfig, null, 2)
+      );
+
+      const result = await WorkspaceConfigService.load();
+
+      expect(result.success).toBe(true);
+      if (result.success && result.value.mode === 'single-production') {
+        expect(result.value.staging.apiKey).toBe('direct_key');
+      }
+    });
+
+    it('should return error when api_key_env points to unset environment variable', async () => {
+      delete process.env['UNSET_API_KEY'];
+
+      const workspacesConfig = {
+        staging: {
+          api_key_env: 'UNSET_API_KEY',
+          name: 'Staging',
+        },
+        production: {
+          api_key: 'prod_key',
+          name: 'Production',
+        },
+      };
+
+      await fs.writeFile(
+        path.join(tempDir, 'workspaces.json'),
+        JSON.stringify(workspacesConfig, null, 2)
+      );
+
+      const result = await WorkspaceConfigService.load();
+
+      expect(result.success).toBe(false);
+      const error = (result as { success: false; error: RetellError }).error;
+      expect(error.message).toContain('UNSET_API_KEY');
+      expect(error.message).toContain('not set');
+    });
+
+    it('should return error when neither api_key nor api_key_env is provided', async () => {
+      const workspacesConfig = {
+        staging: {
+          name: 'Staging',
+        },
+        production: {
+          api_key: 'prod_key',
+          name: 'Production',
+        },
+      };
+
+      await fs.writeFile(
+        path.join(tempDir, 'workspaces.json'),
+        JSON.stringify(workspacesConfig, null, 2)
+      );
+
+      const result = await WorkspaceConfigService.load();
+
+      expect(result.success).toBe(false);
+      const error = (result as { success: false; error: RetellError }).error;
+      expect(error.message).toContain('Invalid or missing API key');
+    });
+  });
+
   describe('load', () => {
     it('should load workspace configs from workspaces.json file', async () => {
       const workspacesConfig = {
