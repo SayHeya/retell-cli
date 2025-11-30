@@ -6,7 +6,7 @@
  */
 
 import { Command } from 'commander';
-import { WorkspaceController } from '@heya/retell.controllers';
+import { WorkspaceController, HashCalculator, AgentConfig } from '@heya/retell.controllers';
 import Retell from 'retell-sdk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -162,6 +162,18 @@ async function executeSync(options: SyncOptions): Promise<void> {
           // For staging or single-production, use the type
           const workspaceKey = ws.key || ws.type;
 
+          // Calculate config_hash from local agent.json
+          let configHash: string | null = null;
+          try {
+            const agentConfig = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+            const hashResult = HashCalculator.calculateAgentHash(agentConfig);
+            if (hashResult.success) {
+              configHash = hashResult.value;
+            }
+          } catch {
+            // If we can't read/parse agent.json, leave hash as null
+          }
+
           const entry: AgentMetadata = {
             workspace: workspaceKey,
             agent_id: matchingAgent.agent_id,
@@ -171,7 +183,7 @@ async function executeSync(options: SyncOptions): Promise<void> {
                 : '',
             kb_id: null,
             last_sync: new Date().toISOString(),
-            config_hash: null, // Would need to recalculate
+            config_hash: configHash,
             retell_version: matchingAgent.version ?? null,
           };
 

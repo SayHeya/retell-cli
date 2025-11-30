@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
-import { WorkspaceController, MetadataManager, type MetadataFile } from '@heya/retell.controllers';
+import { WorkspaceController, MetadataManager, HashCalculator, type MetadataFile, type AgentConfig } from '@heya/retell.controllers';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -641,6 +641,130 @@ describe('Sync Command Dependencies', () => {
       // Verify file wasn't changed
       const content = JSON.parse(await fs.readFile(path.join(agentDir, 'staging.json'), 'utf-8'));
       expect(content.agent_id).toBe('original_id');
+    });
+  });
+
+  describe('Config hash calculation', () => {
+    it('should calculate config_hash from local agent.json during sync', async () => {
+      const agentDir = path.join(agentsDir, 'test-agent');
+      await fs.mkdir(agentDir, { recursive: true });
+
+      // Create a sample agent.json with typical config
+      const agentConfig: AgentConfig = {
+        agent_name: 'Test Agent',
+        voice_id: 'voice_123',
+        language: 'en-US',
+        llm_config: {
+          model: 'gpt-4o',
+          general_prompt: 'You are a helpful assistant.',
+        },
+      };
+
+      const agentJsonPath = path.join(agentDir, 'agent.json');
+      await fs.writeFile(agentJsonPath, JSON.stringify(agentConfig, null, 2));
+
+      // Calculate hash from agent.json (simulating what sync command does)
+      const savedContent = await fs.readFile(agentJsonPath, 'utf-8');
+      const savedConfig = JSON.parse(savedContent) as AgentConfig;
+      const hashResult = HashCalculator.calculateAgentHash(savedConfig);
+
+      // Verify hash is calculated successfully
+      expect(hashResult.success).toBe(true);
+      if (hashResult.success) {
+        expect(hashResult.value).toMatch(/^sha256:[a-f0-9]{64}$/);
+      }
+    });
+
+    it('should produce consistent hash for same agent config', async () => {
+      const agentDir = path.join(agentsDir, 'test-agent');
+      await fs.mkdir(agentDir, { recursive: true });
+
+      const agentConfig: AgentConfig = {
+        agent_name: 'Consistent Agent',
+        voice_id: 'voice_456',
+        language: 'en-US',
+        llm_config: {
+          model: 'gpt-4o-mini',
+          general_prompt: 'Test prompt',
+        },
+      };
+
+      const agentJsonPath = path.join(agentDir, 'agent.json');
+      await fs.writeFile(agentJsonPath, JSON.stringify(agentConfig, null, 2));
+
+      // Calculate hash twice
+      const content1 = await fs.readFile(agentJsonPath, 'utf-8');
+      const config1 = JSON.parse(content1) as AgentConfig;
+      const hash1 = HashCalculator.calculateAgentHash(config1);
+
+      const content2 = await fs.readFile(agentJsonPath, 'utf-8');
+      const config2 = JSON.parse(content2) as AgentConfig;
+      const hash2 = HashCalculator.calculateAgentHash(config2);
+
+      // Verify both hashes match
+      expect(hash1.success).toBe(true);
+      expect(hash2.success).toBe(true);
+      if (hash1.success && hash2.success) {
+        expect(hash1.value).toBe(hash2.value);
+      }
+    });
+
+    it('should not set config_hash to null when agent.json exists', async () => {
+      const agentDir = path.join(agentsDir, 'test-agent');
+      await fs.mkdir(agentDir, { recursive: true });
+
+      // Create agent.json
+      const agentConfig: AgentConfig = {
+        agent_name: 'Test Agent',
+        voice_id: 'voice_789',
+        language: 'en-US',
+        llm_config: {
+          model: 'gpt-4o',
+          general_prompt: 'Test',
+        },
+      };
+
+      const agentJsonPath = path.join(agentDir, 'agent.json');
+      await fs.writeFile(agentJsonPath, JSON.stringify(agentConfig, null, 2));
+
+      // Simulate sync command logic: calculate hash from agent.json
+      let configHash: string | null = null;
+      try {
+        const agentConfigFromFile = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+        const hashResult = HashCalculator.calculateAgentHash(agentConfigFromFile);
+        if (hashResult.success) {
+          configHash = hashResult.value;
+        }
+      } catch {
+        // If we can't read/parse agent.json, leave hash as null
+      }
+
+      // This is the key assertion - config_hash should NOT be null
+      expect(configHash).not.toBeNull();
+      expect(configHash).toMatch(/^sha256:[a-f0-9]{64}$/);
+    });
+
+    it('should set config_hash to null when agent.json does not exist', async () => {
+      const agentDir = path.join(agentsDir, 'test-agent');
+      await fs.mkdir(agentDir, { recursive: true });
+
+      // Don't create agent.json - simulate missing file
+      const agentJsonPath = path.join(agentDir, 'agent.json');
+
+      // Simulate sync command logic: try to calculate hash
+      let configHash: string | null = null;
+      try {
+        const agentConfigFromFile = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+        const hashResult = HashCalculator.calculateAgentHash(agentConfigFromFile);
+        if (hashResult.success) {
+          configHash = hashResult.value;
+        }
+      } catch {
+        // If we can't read/parse agent.json, leave hash as null
+      }
+
+      // When agent.json doesn't exist, hash should be null
+      expect(configHash).toBeNull();
     });
   });
 });
