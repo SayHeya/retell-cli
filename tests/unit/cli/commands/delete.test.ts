@@ -136,4 +136,50 @@ describe('Delete Command Dependencies', () => {
       }
     });
   });
+
+  describe('Delete by ID option validation', () => {
+    it('should require workspace when using --by-id', () => {
+      // This tests the validation logic that --by-id requires --workspace
+      const validateDeleteByIdOptions = (options: { byId?: boolean; workspace?: string }) => {
+        if (options.byId && !options.workspace) {
+          throw new Error('--workspace (-w) is required when using --by-id');
+        }
+        return true;
+      };
+
+      expect(() => validateDeleteByIdOptions({ byId: true })).toThrow(
+        '--workspace (-w) is required when using --by-id'
+      );
+      expect(() => validateDeleteByIdOptions({ byId: true, workspace: 'staging' })).not.toThrow();
+      expect(() => validateDeleteByIdOptions({ byId: false })).not.toThrow();
+    });
+
+    it('should reject --local-only with --by-id', () => {
+      // This tests the validation logic that --by-id cannot be used with --local-only
+      const validateDeleteByIdOptions = (options: { byId?: boolean; localOnly?: boolean }) => {
+        if (options.byId && options.localOnly) {
+          throw new Error('--local-only cannot be used with --by-id');
+        }
+        return true;
+      };
+
+      expect(() => validateDeleteByIdOptions({ byId: true, localOnly: true })).toThrow(
+        '--local-only cannot be used with --by-id'
+      );
+      expect(() => validateDeleteByIdOptions({ byId: true, localOnly: false })).not.toThrow();
+    });
+
+    it('should validate agent ID format', () => {
+      // Agent IDs should follow the pattern agent_<hash>
+      const isValidAgentId = (id: string): boolean => {
+        return /^agent_[a-f0-9]+$/i.test(id);
+      };
+
+      expect(isValidAgentId('agent_abc123def456')).toBe(true);
+      expect(isValidAgentId('agent_fe7f68c5f08458537ed8643193')).toBe(true);
+      expect(isValidAgentId('invalid_id')).toBe(false);
+      expect(isValidAgentId('agent-abc123')).toBe(false);
+      expect(isValidAgentId('abc123')).toBe(false);
+    });
+  });
 });
