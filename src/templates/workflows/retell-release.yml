@@ -1,6 +1,9 @@
 # Retell CLI - Release Workflow
-# This workflow publishes the package to npm when a release is created
-# Exported by: retell workflows init
+#
+# Packages agent configurations into a release artifact when a GitHub Release is created.
+# Creates .tar.gz and .zip archives with a release manifest.
+#
+# No secrets required - reads from production branch.
 
 name: Release
 
@@ -8,108 +11,69 @@ on:
   release:
     types: [published]
 
-  # Allow manual trigger for testing
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: 'Dry run (skip npm publish)'
-        required: false
-        default: true
-        type: boolean
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   release:
-    name: Build and Publish
+    name: Package Release
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          ref: production
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm run test:ci
-
-      - name: Build package
-        run: npm run build
-
-      - name: Verify build output
+      - name: Get tag
+        id: tag
         run: |
-          echo "Checking build output..."
-
-          # Check dist directory exists
-          if [ ! -d "dist" ]; then
-            echo "::error::dist directory not found"
-            exit 1
-          fi
-
-          # Check main entry point
-          if [ ! -f "dist/index.js" ]; then
-            echo "::error::dist/index.js not found"
-            exit 1
-          fi
-
-          # Check CLI entry point
-          if [ ! -f "dist/cli/index.js" ]; then
-            echo "::error::dist/cli/index.js not found"
-            exit 1
-          fi
-
-          # Check templates were copied
-          if [ ! -d "dist/templates/workflows" ]; then
-            echo "::error::dist/templates/workflows not found"
-            exit 1
-          fi
-
-          # List workflow templates
-          echo "Workflow templates included:"
-          ls -la dist/templates/workflows/
-
-          echo "✓ Build verification passed"
-
-      - name: Check package contents
-        run: |
-          echo "Files that will be published:"
-          npm pack --dry-run 2>&1
-
-      - name: Publish to npm
-        if: ${{ github.event_name == 'release' || github.event.inputs.dry_run != 'true' }}
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Dry run publish
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "Dry run - skipping npm publish"
-          npm publish --dry-run
-
-      - name: Release Summary
-        if: always()
-        run: |
-          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ github.event_name }}" = "release" ]; then
-            echo "**Version:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-            echo "**Release:** ${{ github.event.release.name }}" >> $GITHUB_STEP_SUMMARY
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
           else
-            echo "**Manual trigger** (dry run: ${{ github.event.inputs.dry_run }})" >> $GITHUB_STEP_SUMMARY
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Published Files:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          npm pack --dry-run 2>&1 | tail -20 >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create manifest
+        run: |
+          cat > agents/RELEASE_MANIFEST.json << EOF
+          {
+            "tag": "${{ steps.tag.outputs.tag }}",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "agents": [
+          EOF
+
+          first=true
+          for dir in agents/*/; do
+            if [ -f "$dir/agent.json" ]; then
+              name=$(basename "$dir")
+              if [ "$first" = true ]; then first=false; else echo "," >> agents/RELEASE_MANIFEST.json; fi
+              echo "    \"$name\"" >> agents/RELEASE_MANIFEST.json
+            fi
+          done
+
+          echo "  ]" >> agents/RELEASE_MANIFEST.json
+          echo "}" >> agents/RELEASE_MANIFEST.json
+
+      - name: Create archives
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+          tar -czvf "retell-agents-${tag}.tar.gz" agents/
+          zip -r "retell-agents-${tag}.zip" agents/
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            retell-agents-${{ steps.tag.outputs.tag }}.tar.gz
+            retell-agents-${{ steps.tag.outputs.tag }}.zip
+            agents/RELEASE_MANIFEST.json

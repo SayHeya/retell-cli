@@ -173,7 +173,9 @@ async function executeRollback(
     console.log(`Dry run - no changes made.`);
     console.log(`\nWould rollback:`);
     console.log(`  Agent ID: ${agentId}`);
-    if (llmId) {console.log(`  LLM ID: ${llmId}`);}
+    if (llmId) {
+      console.log(`  LLM ID: ${llmId}`);
+    }
     console.log(`  From version: ${previousVersion}`);
     console.log(`  To version: ${restoredToVersion}`);
     if (options.publish) {
@@ -182,7 +184,9 @@ async function executeRollback(
   } else {
     console.log(`✓ Rollback completed successfully!`);
     console.log(`  Agent ID: ${agentId}`);
-    if (llmId) {console.log(`  LLM ID: ${llmId}`);}
+    if (llmId) {
+      console.log(`  LLM ID: ${llmId}`);
+    }
     console.log(`  Previous version: ${previousVersion}`);
     console.log(`  Restored to version: ${restoredToVersion}`);
     if (newVersion !== null) {

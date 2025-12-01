@@ -5,7 +5,12 @@
 import { Command } from 'commander';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { AgentConfigLoader, MetadataManager, HashCalculator, WorkspaceConfigService } from '@heya/retell.controllers';
+import {
+  AgentConfigLoader,
+  MetadataManager,
+  HashCalculator,
+  WorkspaceConfigService,
+} from '@heya/retell.controllers';
 import { handleError } from '../errors/cli-error-handler';
 
 export const statusCommand = new Command('status')
@@ -212,13 +217,17 @@ function displayStatus(statuses: AgentStatus[]): void {
         }
       } else {
         // Single-production: show single entry
-        const prod = status.production[0]!;
-        console.log(`    ID: ${prod.agentId}`);
-        const prodHashDisplay =
-          prod.hash !== null ? prod.hash.substring(0, 12) + '...' : 'unknown';
-        console.log(`    Hash: ${prodHashDisplay}`);
-        console.log(`    Last Synced: ${formatTimestamp(prod.lastSynced)}`);
-        console.log(`    Status: ${prod.inSync ? '✓ IN SYNC' : '✗ OUT OF SYNC'}`);
+        const prod = status.production[0];
+        if (prod === undefined) {
+          console.log(`    Status: NOT SYNCED`);
+        } else {
+          console.log(`    ID: ${prod.agentId}`);
+          const prodHashDisplay =
+            prod.hash !== null ? prod.hash.substring(0, 12) + '...' : 'unknown';
+          console.log(`    Hash: ${prodHashDisplay}`);
+          console.log(`    Last Synced: ${formatTimestamp(prod.lastSynced)}`);
+          console.log(`    Status: ${prod.inSync ? '✓ IN SYNC' : '✗ OUT OF SYNC'}`);
+        }
       }
     } else {
       console.log(`    Status: NOT SYNCED`);

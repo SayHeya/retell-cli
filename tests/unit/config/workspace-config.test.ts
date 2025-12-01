@@ -187,7 +187,9 @@ describe('WorkspaceConfigService', () => {
       const result = await WorkspaceConfigService.load();
 
       expect(result.success).toBe(true);
-      if (!result.success) {return;}
+      if (!result.success) {
+        return;
+      }
       expect(result.value.staging.apiKey).toBe('staging_key_123');
       expect(result.value.mode).toBe('single-production');
       if (result.value.mode === 'single-production') {

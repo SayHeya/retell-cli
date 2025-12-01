@@ -164,6 +164,26 @@ retell audit [-w staging|production] [--fix]
 
 # Check for configuration conflicts
 retell diff <agent-name> [-w staging|production] [--resolve use-local|use-remote]
+
+# Sync agent with workspace or between workspaces
+retell sync <agent-name> [-w staging|production]
+retell sync <agent-name> --from staging --to production
+
+# Delete agent from workspace
+retell delete <agent-name> [-w staging|production] [-y] [--keep-local]
+```
+
+### Version Management
+
+```bash
+# List all versions of an agent
+retell version <agent-name> list [-w staging|production]
+
+# Publish current draft as immutable version
+retell version <agent-name> publish [-w staging|production]
+
+# Rollback to a previous version
+retell version <agent-name> rollback [-w staging|production] --to <version-number>
 ```
 
 ### GitOps Workflows
@@ -296,6 +316,130 @@ All agent configuration fields can be updated, including:
 - Supports dot notation for nested fields (e.g., `llm_config.temperature`)
 - Shows both old and new values
 - Reminds you to push changes to sync with Retell workspace
+
+#### Sync Command
+
+The `sync` command synchronizes agent configuration with a workspace or between workspaces.
+
+**Usage:**
+```bash
+retell sync <agent-name> [-w workspace] [options]
+```
+
+**Options:**
+- `-w, --workspace <workspace>` - Workspace to sync with (default: "staging")
+- `-p, --path <path>` - Path to agents directory (default: "./agents")
+- `--from <workspace>` - Source workspace for cross-workspace sync
+- `--to <workspace>` - Target workspace for cross-workspace sync
+- `-f, --force` - Force sync even with conflicts
+
+**Examples:**
+
+```bash
+# Sync local agent with staging
+retell sync my-agent -w staging
+
+# Sync local agent with production
+retell sync my-agent -w production
+
+# Sync agent from staging to production (cross-workspace)
+retell sync my-agent --from staging --to production
+
+# Force sync (overwrite conflicts)
+retell sync my-agent -w staging --force
+```
+
+**Behavior:**
+- Detects differences between local and remote configurations
+- Reports conflicts if both local and remote have changed
+- Updates local metadata after successful sync
+- Cross-workspace sync copies configuration between environments
+
+#### Version Command
+
+The `version` command manages agent versions (publish, list, rollback) for Retell's versioning system.
+
+**Usage:**
+```bash
+retell version <agent-name> <subcommand> [options]
+```
+
+**Subcommands:**
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all published versions of an agent |
+| `publish` | Publish current draft as an immutable version |
+| `rollback` | Rollback agent to a previous published version |
+
+**Options:**
+- `-w, --workspace <workspace>` - Target workspace (default: "staging")
+- `-p, --path <path>` - Path to agents directory (default: "./agents")
+- `--to <version>` - Version number to rollback to (for rollback subcommand)
+
+**Examples:**
+
+```bash
+# List all versions
+retell version my-agent list -w staging
+retell version my-agent list -w production
+
+# Publish current draft
+retell version my-agent publish -w staging
+
+# Rollback to version 5
+retell version my-agent rollback -w staging --to 5
+```
+
+**Versioning Workflow:**
+1. Make changes to agent configuration locally
+2. Push changes with `retell push my-agent -w staging`
+3. Test the draft version
+4. Publish with `retell version my-agent publish -w staging`
+5. The published version is immutable and can be assigned to phone numbers
+6. Rollback if needed with `retell version my-agent rollback --to <version>`
+
+**Note:** Published versions are immutable snapshots. They cannot be modified, but you can always create new versions by editing and publishing again.
+
+#### Delete Command
+
+The `delete` command removes an agent from a Retell workspace.
+
+**Usage:**
+```bash
+retell delete <agent-name> [-w workspace] [options]
+```
+
+**Options:**
+- `-w, --workspace <workspace>` - Target workspace (default: "staging")
+- `-p, --path <path>` - Path to agents directory (default: "./agents")
+- `-y, --yes` - Skip confirmation prompt
+- `--keep-local` - Keep local files after deletion (only remove from workspace)
+
+**Examples:**
+
+```bash
+# Delete from staging (with confirmation)
+retell delete my-agent -w staging
+
+# Delete from staging (skip confirmation)
+retell delete my-agent -w staging -y
+
+# Delete from production
+retell delete my-agent -w production -y
+
+# Delete from workspace but keep local files
+retell delete my-agent -w staging --keep-local
+```
+
+**Behavior:**
+- Removes the agent from the specified Retell workspace
+- Deletes the associated LLM configuration
+- By default, also clears local metadata (agent_id, llm_id, etc.)
+- With `--keep-local`, preserves agent.json but clears workspace references
+- Requires confirmation unless `-y` flag is provided
+
+**Warning:** Deletion is permanent. Make sure to back up any important configurations before deleting.
 
 #### Phone Number Management
 
@@ -761,12 +905,52 @@ npm run test:ci
 
 ## Documentation
 
-- [Specification](./docs/SPECIFICATION.md) - Complete CLI command reference
-- [Technical Specification](./docs/TECHNICAL_SPECIFICATION.md) - Detailed technical documentation
-- [Workflows](./docs/WORKFLOWS.md) - GitOps methodology and GitHub Actions setup
-- [Phone Management](./docs/PHONE_MANAGEMENT.md) - Phone numbers, SIP trunks, and directory
-- [MCP Setup](./docs/MCP_SETUP.md) - Model Context Protocol integration guide
-- [Changelog](./docs/CHANGELOG.md) - Version history
+### Guides
+
+| Document | Description |
+|----------|-------------|
+| [SPECIFICATION.md](./docs/SPECIFICATION.md) | Complete CLI command reference and agent configuration |
+| [TECHNICAL_SPECIFICATION.md](./docs/TECHNICAL_SPECIFICATION.md) | Architecture, type system, and implementation details |
+| [WORKFLOWS.md](./docs/WORKFLOWS.md) | GitOps methodology and GitHub Actions setup |
+| [PHONE_MANAGEMENT.md](./docs/PHONE_MANAGEMENT.md) | Phone numbers, SIP trunks, and directory management |
+| [MCP_SETUP.md](./docs/MCP_SETUP.md) | Model Context Protocol integration guide |
+| [CHANGELOG.md](./docs/CHANGELOG.md) | Version history and upgrade guides |
+
+### Command Source Files
+
+All CLI commands are implemented in `src/cli/commands/`:
+
+| Command | Source File | Description |
+|---------|-------------|-------------|
+| `init` | [`init.ts`](src/cli/commands/init.ts) | Initialize new agent directory |
+| `push` | [`push.ts`](src/cli/commands/push.ts) | Push agent to workspace |
+| `pull` | [`pull.ts`](src/cli/commands/pull.ts) | Pull agent from workspace |
+| `list` | [`list.ts`](src/cli/commands/list.ts) | List agents |
+| `status` | [`status.ts`](src/cli/commands/status.ts) | Show sync status |
+| `diff` | [`diff.ts`](src/cli/commands/diff.ts) | Compare local vs remote |
+| `delete` | [`delete.ts`](src/cli/commands/delete.ts) | Delete agent from workspace |
+| `update` | [`update.ts`](src/cli/commands/update.ts) | Update agent config fields |
+| `sync` | [`sync.ts`](src/cli/commands/sync.ts) | Sync agents between workspaces |
+| `version` | [`version.ts`](src/cli/commands/version.ts) | Manage agent versions |
+| `audit` | [`audit.ts`](src/cli/commands/audit.ts) | Audit for issues |
+| `bulk-create` | [`bulk-create.ts`](src/cli/commands/bulk-create.ts) | Create multiple agents |
+| `workspace init` | [`workspace-init.ts`](src/cli/commands/workspace-init.ts) | Generate workspaces.json |
+| `workspace list` | [`workspace-list.ts`](src/cli/commands/workspace-list.ts) | List workspaces |
+| `workflows` | [`workflows.ts`](src/cli/commands/workflows.ts) | GitHub Actions setup |
+| `phone` | [`phone.ts`](src/cli/commands/phone.ts) | Phone number management |
+
+### Controllers Package
+
+Business logic is in `packages/controllers/src/`:
+
+| Module | Description |
+|--------|-------------|
+| `controllers/` | Business orchestration (AgentController, WorkspaceController, VersionController) |
+| `services/` | External integrations (RetellClientService, WorkspaceConfigService) |
+| `core/` | Core logic (HashCalculator, MetadataManager, PromptBuilder, etc.) |
+| `schemas/` | Zod validation schemas |
+| `types/` | TypeScript type definitions |
+| `errors/` | Error codes and RetellError class |
 
 ## Workspace Limits
 

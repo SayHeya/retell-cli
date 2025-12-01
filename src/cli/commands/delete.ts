@@ -6,7 +6,14 @@ import { Command } from 'commander';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as readline from 'readline';
-import { AgentController, MetadataManager, WorkspaceConfigService, RetellClientService, createAgentId, createLlmId } from '@heya/retell.controllers';
+import {
+  AgentController,
+  MetadataManager,
+  WorkspaceConfigService,
+  RetellClientService,
+  createAgentId,
+  createLlmId,
+} from '@heya/retell.controllers';
 import type { WorkspaceType } from '@heya/retell.controllers';
 import { handleError } from '../errors/cli-error-handler';
 
@@ -273,7 +280,9 @@ async function executeDeleteById(agentId: string, options: DeleteOptions): Promi
 
   const agent = agentResult.value;
   const agentName = (agent as Record<string, unknown>)['agent_name'] as string;
-  const llmId = ((agent as Record<string, unknown>)['response_engine'] as Record<string, unknown> | undefined)?.['llm_id'] as string | undefined;
+  const llmId = (
+    (agent as Record<string, unknown>)['response_engine'] as Record<string, unknown> | undefined
+  )?.['llm_id'] as string | undefined;
 
   console.log('Deletion Plan:\n');
   console.log(`${options.workspace.toUpperCase()} Workspace:`);

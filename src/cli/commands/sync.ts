@@ -6,7 +6,7 @@
  */
 
 import { Command } from 'commander';
-import { WorkspaceController, HashCalculator, AgentConfig } from '@heya/retell.controllers';
+import { WorkspaceController, HashCalculator, type AgentConfig } from '@heya/retell.controllers';
 import Retell from 'retell-sdk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -116,7 +116,9 @@ async function executeSync(options: SyncOptions): Promise<void> {
           agent_id: a.agent_id,
           agent_name: a.agent_name || 'Unknown',
           llm_id:
-            a.response_engine !== null && a.response_engine !== undefined && 'llm_id' in a.response_engine
+            a.response_engine !== null &&
+            a.response_engine !== undefined &&
+            'llm_id' in a.response_engine
               ? a.response_engine.llm_id
               : undefined,
         })),
@@ -165,7 +167,9 @@ async function executeSync(options: SyncOptions): Promise<void> {
           // Calculate config_hash from local agent.json
           let configHash: string | null = null;
           try {
-            const agentConfig = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+            const agentConfig = JSON.parse(
+              await fs.readFile(agentJsonPath, 'utf-8')
+            ) as AgentConfig;
             const hashResult = HashCalculator.calculateAgentHash(agentConfig);
             if (hashResult.success) {
               configHash = hashResult.value;
@@ -178,7 +182,9 @@ async function executeSync(options: SyncOptions): Promise<void> {
             workspace: workspaceKey,
             agent_id: matchingAgent.agent_id,
             llm_id:
-              matchingAgent.response_engine !== null && matchingAgent.response_engine !== undefined && 'llm_id' in matchingAgent.response_engine
+              matchingAgent.response_engine !== null &&
+              matchingAgent.response_engine !== undefined &&
+              'llm_id' in matchingAgent.response_engine
                 ? matchingAgent.response_engine.llm_id
                 : '',
             kb_id: null,
@@ -206,9 +212,7 @@ async function executeSync(options: SyncOptions): Promise<void> {
 
               // Find and update or add entry for this workspace
               // Look up by workspace key (e.g., "prod-1", "prod-2")
-              const existingIdx = existingEntries.findIndex(
-                (e) => e.workspace === workspaceKey
-              );
+              const existingIdx = existingEntries.findIndex((e) => e.workspace === workspaceKey);
 
               if (existingIdx >= 0) {
                 existingEntries[existingIdx] = entry;
@@ -252,9 +256,7 @@ async function executeSync(options: SyncOptions): Promise<void> {
 
                   // Remove entry by workspace key (e.g., "prod-1")
                   const wsKey = ws.key || ws.type;
-                  const filtered = existingEntries.filter(
-                    (e) => e.workspace !== wsKey
-                  );
+                  const filtered = existingEntries.filter((e) => e.workspace !== wsKey);
 
                   if (filtered.length > 0) {
                     await fs.writeFile(metadataPath, JSON.stringify(filtered, null, 2) + '\n');

@@ -79,7 +79,9 @@ async function checkCliVersion(): Promise<void> {
     if (message) {
       console.error(`   ${message}`);
     }
-    console.error(`   Run: npm install -g @heya/retell-cli@${required.replace(/^[\^~>=<]+/, '')}\n`);
+    console.error(
+      `   Run: npm install -g @heya/retell-cli@${required.replace(/^[\^~>=<]+/, '')}\n`
+    );
   }
 }
 

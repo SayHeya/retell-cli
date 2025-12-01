@@ -141,7 +141,7 @@ describe('Delete Command Dependencies', () => {
     it('should require workspace when using --by-id', () => {
       // This tests the validation logic that --by-id requires --workspace
       const validateDeleteByIdOptions = (options: { byId?: boolean; workspace?: string }) => {
-        if (options.byId && !options.workspace) {
+        if (options.byId === true && options.workspace === undefined) {
           throw new Error('--workspace (-w) is required when using --by-id');
         }
         return true;
@@ -157,7 +157,7 @@ describe('Delete Command Dependencies', () => {
     it('should reject --local-only with --by-id', () => {
       // This tests the validation logic that --by-id cannot be used with --local-only
       const validateDeleteByIdOptions = (options: { byId?: boolean; localOnly?: boolean }) => {
-        if (options.byId && options.localOnly) {
+        if (options.byId === true && options.localOnly === true) {
           throw new Error('--local-only cannot be used with --by-id');
         }
         return true;

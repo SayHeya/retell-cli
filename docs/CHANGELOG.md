@@ -5,106 +5,106 @@ All notable changes to the Retell CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2025-12-01
+
+### Fixed
+- Updated controllers submodule with conflict detection fix
+
+## [1.4.3] - 2025-11-30
+
+### Fixed
+- Calculate `config_hash` from local `agent.json` in sync command for accurate change detection
+
+## [1.4.2] - 2025-11-29
+
+### Added
+- Support for both `api_key` and `api_key_env` in workspace configuration
+  - Legacy format with raw `api_key` still supported
+  - New format with `api_key_env` references environment variables
+
+## [1.4.1] - 2025-11-28
+
+### Fixed
+- Multi-production support for `status`, `diff`, and `sync` commands
+- Proper metadata handling for multi-production workspace arrays
+
+### Added
+- CLI version validation on startup
+
+## [1.3.1] - 2025-11-27
+
+### Added
+- **Delete by ID**: `delete` command now supports deleting by agent ID
+  - Use `--id` flag to specify agent ID directly
+  - Useful when agent name is ambiguous
+
+### Fixed
+- Multi-production push now correctly handles workspace arrays
+
+## [1.3.0] - 2025-11-26
+
+### Added
+- **Orchestration mode-aware metadata**: CLI now adapts to workspace mode
+  - Single-production: `production.json` is an object
+  - Multi-production: `production.json` is an array of entries
+
+## [1.2.1] - 2025-11-25
+
+### Fixed
+- Consistent hash calculation in pull command and tests
+- Hash now calculated identically across push, pull, and status commands
+
+## [1.2.0] - 2025-11-24
+
+### Added
+- **Multi-production metadata schema**: Support for array-based `production.json`
+- **Rollback improvements**: Warning displayed when `response_engine` is skipped during rollback
+
+### Fixed
+- Metadata schema properly handles multi-production workspace arrays
+
+## [1.1.0] - 2025-11-22
+
+### Added
+- **Multi-production workspace support**: Deploy to multiple production workspaces
+  - Configure multiple production workspaces in `workspaces.json`
+  - `--workspace-id` flag to target specific production workspace
+  - Array-based metadata tracking in `production.json`
+
+### Fixed
+- `model_temperature` field properly handled in agent configuration
+
 ## [Unreleased]
 
 ### Added
 
 #### Test Migration to Controllers Package
-- **Core Tests Moved**: Migrated core logic tests from `tests/unit/core/` to `packages/controllers/`:
-  - `variable-resolver.test.ts` - Variable categorization and validation tests
-  - `agent-config-loader.test.ts` - Agent config load/save/exists tests
-  - `metadata-manager.test.ts` - Metadata read/write/update tests
-  - `agent-transformer.test.ts` - Agent transformation tests
-
-- **Test Enhancements**:
-  - Added empty content and unicode handling tests to `hash-calculator.test.ts`
-  - Added system variable extraction tests to `prompt-builder.test.ts`
-
+- **Core Tests Moved**: Migrated core logic tests from `tests/unit/core/` to `packages/controllers/`
 - **Controllers Package Tests**: 8 test suites with 113 tests (Vitest)
 - **CLI Tests**: 16 test suites with 128 tests (Jest)
 
 ### Changed
 
-#### Test Infrastructure Cleanup
-- **Removed Duplicate Source Files**:
-  - Deleted `src/core/` - 9 duplicate files (now in controllers package)
-  - Deleted `src/schemas/` - 2 duplicate files
-  - Deleted `src/config/` - 1 duplicate file
-  - Deleted `src/types/` - 2 duplicate files
-
-- **Updated Test Imports**: All CLI command tests now import from `@heya/retell.controllers`:
-  - `push.test.ts`, `pull.test.ts`, `status.test.ts`, `diff.test.ts`
-  - `update.test.ts`, `init.test.ts`, `bulk-create.test.ts`
-  - `list.test.ts`, `delete.test.ts`
-  - `common.types.test.ts` - Updated to use `createError` with `RetellError`
-
-- **Fixed TS Errors**: Resolved unused variable warnings in `prompt-section-mapper.ts`
-
 #### Monorepo Architecture with @heya/retell.controllers Package
 - **Package Extraction**: Core functionality extracted into `packages/controllers/` npm package
-  - Enables reuse by CLI, API, and other tools
-  - Controllers orchestrate business operations (AgentController, WorkspaceController)
+  - Controllers orchestrate business operations (AgentController, WorkspaceController, VersionController)
   - Services wrap external integrations (RetellClientService, WorkspaceConfigService)
   - Core modules handle business logic (HashCalculator, MetadataManager, etc.)
 
 - **Structured Error Handling**: New `RetellError` system with error codes
   - 40+ error codes covering workspace, agent, sync, API, validation, and file operations
   - CLI maps errors to user-friendly messages with hints
-  - API can map errors to HTTP status codes
-  - Error details include contextual information and suggestions
-
-- **Controller Layer**: Business logic orchestration
-  - `AgentController`: push, list, delete operations
-  - `WorkspaceController`: init, list, exists operations
-  - All methods return `Result<T, RetellError>` for consistent error handling
-
-- **CLI Error Handler**: Maps module errors to CLI output
-  - User-friendly error messages with emojis
-  - Contextual hints for resolution
-  - Appropriate exit codes
-
-### Changed
-
-- **Project Structure**: Now uses npm workspaces monorepo pattern
-  - `packages/controllers/` contains reusable core functionality
-  - `src/cli/` contains CLI-specific code (thin wrappers)
-  - Dependencies managed through workspace protocol
-
-- **Import Paths**: Core types and modules now imported from `@heya/retell.controllers`
-  - `import { AgentController, WorkspaceType } from '@heya/retell.controllers'`
-
-- **Build Process**: Module must be built before CLI
-  - `npm run build` now builds module first, then CLI
 
 #### Production Push Protection
 - **Staging-First Workflow**: Enforced staging deployment before production
   - Cannot push to production unless agent exists in staging
   - Local version must match staging version (same config hash)
-  - Validates staging deployment state before production push
-  - Clear error messages with remediation steps
   - `--force` flag available to override (not recommended)
 
-- **Benefits**:
-  - Prevents accidental production deployments
-  - Ensures all changes are tested in staging first
-  - Maintains consistency between environments
-  - Reduces production incidents
-
 #### Bulk Agent Creation
-- **`bulk-create` Command**: New CLI command to create multiple agents from templates
-  - Create 1-1000 agents at once with configurable options
-  - Automatic sequential naming (e.g., agent-001, agent-002)
-  - Template-based agent generation
-  - Workspace validation before creation
-  - Conflict detection and skip existing agents
-  - Progress tracking and detailed summary
-  - Customizable agent names and prompts per agent
-  - Options: `--count`, `--template`, `--prefix`, `--path`, `--templates`, `--skip-validation`, `--yes`
-
-- **Template System**: Basic agent template in `templates/basic.json`
-  - JSON-based agent configuration templates
-  - Support for custom templates
-  - Automatic prompt customization per agent
+- **`bulk-create` Command**: Create multiple agents from templates (1-10000 agents)
+  - Automatic sequential naming, template-based generation
+  - Options: `--count`, `--template`, `--prefix`, `--path`, `--yes`
 
 ## [1.0.0] - 2025-11-18
 
@@ -178,15 +178,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reinforced `.gitignore` patterns for sensitive files
 - Added explicit documentation about never committing API keys
 - Workspace validation prevents operations with incomplete configuration
-
-## [Unreleased]
-
-### Planned Features
-- `workspace add` command for interactive workspace addition
-- `workspace list` command to show configured workspaces
-- `workspace remove` command to remove workspace configuration
-- API key validation (test connection to Retell API)
-- Workspace ID display in configuration
 
 ---
 

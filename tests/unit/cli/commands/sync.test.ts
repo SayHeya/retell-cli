@@ -5,7 +5,13 @@
  */
 
 import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
-import { WorkspaceController, MetadataManager, HashCalculator, type MetadataFile, type AgentConfig } from '@heya/retell.controllers';
+import {
+  WorkspaceController,
+  MetadataManager,
+  HashCalculator,
+  type MetadataFile,
+  type AgentConfig,
+} from '@heya/retell.controllers';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -529,7 +535,9 @@ describe('Sync Command Dependencies', () => {
       const entries = JSON.parse(content);
 
       const workspaceKey = 'prod-1';
-      const existingIdx = entries.findIndex((e: { workspace: string }) => e.workspace === workspaceKey);
+      const existingIdx = entries.findIndex(
+        (e: { workspace: string }) => e.workspace === workspaceKey
+      );
 
       expect(existingIdx).toBe(0);
       expect(entries[existingIdx].agent_id).toBe('agent_old_1');
@@ -730,7 +738,9 @@ describe('Sync Command Dependencies', () => {
       // Simulate sync command logic: calculate hash from agent.json
       let configHash: string | null = null;
       try {
-        const agentConfigFromFile = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+        const agentConfigFromFile = JSON.parse(
+          await fs.readFile(agentJsonPath, 'utf-8')
+        ) as AgentConfig;
         const hashResult = HashCalculator.calculateAgentHash(agentConfigFromFile);
         if (hashResult.success) {
           configHash = hashResult.value;
@@ -754,7 +764,9 @@ describe('Sync Command Dependencies', () => {
       // Simulate sync command logic: try to calculate hash
       let configHash: string | null = null;
       try {
-        const agentConfigFromFile = JSON.parse(await fs.readFile(agentJsonPath, 'utf-8')) as AgentConfig;
+        const agentConfigFromFile = JSON.parse(
+          await fs.readFile(agentJsonPath, 'utf-8')
+        ) as AgentConfig;
         const hashResult = HashCalculator.calculateAgentHash(agentConfigFromFile);
         if (hashResult.success) {
           configHash = hashResult.value;
